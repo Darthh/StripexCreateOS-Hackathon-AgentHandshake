@@ -21,3 +21,5 @@ dist/
 .env.*
 !.env.example
 worker/embedded.gen.ts
+.createos.json
+.createos.json

@@ -417,9 +417,11 @@ export class Lab extends DurableObject<Env> {
     for (const line of lines) {
       this.mem.portalOffset++;
       const p = safeJson(line);
-      if (!p) continue;
+      // The portal's ref (timestamp + random) is the ticket id, so two orchestrators polling the
+      // same portal insert it once. A malformed line is skipped, never given a fallback id.
+      if (!p || typeof p.ref !== "string" || !/^P[A-Z0-9]{8,32}$/.test(p.ref)) continue;
       const customer = exportRows.find((c) => c.customer_email?.toLowerCase() === String(p.email).toLowerCase())?.customer ?? `unknown:${p.email}`;
-      await this.createTicket({ id: `tk_${String(p.ref).replace(/W/g, "").slice(0, 24)}`, source: "portal", customer_id: customer, customer_email: p.email, charge_id: p.charge_id, amount_cents: p.amount_cents, reason_code: p.reason_code, free_text: p.message });
+      await this.createTicket({ id: `tk_${p.ref}`, source: "portal", customer_id: customer, customer_email: p.email, charge_id: p.charge_id, amount_cents: p.amount_cents, reason_code: p.reason_code, free_text: p.message });
     }
     await this.save();
   }

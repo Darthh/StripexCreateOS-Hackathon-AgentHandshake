@@ -1,5 +1,6 @@
 // The public portal: a ticket form on the box's public URL. This box is on no network
 // and has no egress, so it cannot see the lab. The orchestrator polls the file it writes.
+import { randomUUID } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { createServer } from "node:http";
 
@@ -62,7 +63,7 @@ createServer(async (req, res) => {
             : null;
     if (bad) return send(400, page(`<h1>Check the ${bad}</h1><p><a href="/">Back</a></p>`));
     lastByIp.set(ip, Date.now());
-    const ref = `P${Date.now().toString(36).toUpperCase()}`;
+    const ref = `P${Date.now().toString(36)}${randomUUID().replace(/-/g, "").slice(0, 8)}`.toUpperCase();
     appendFileSync(FILE, `${JSON.stringify({ ref, email, charge_id, amount_cents, reason_code, message, at: new Date().toISOString() })}\n`);
     return send(200, page(`<h1>Received</h1><p>Reference <code>${esc(ref)}</code>. Both agents will look at it in a few seconds; watch it live on the dashboard.</p><p><a href="/">Submit another</a></p>`));
   }
