@@ -350,6 +350,15 @@ Creates **3 synthetic customers, 12 USD test payment intents, and 6 scenarios**.
 
 ### 6. Local development
 
+For an interface-only review, start Vite and open the explicitly labeled sample workspace:
+
+```sh
+npm run dev -- --host 127.0.0.1 --port 5173
+# Open http://127.0.0.1:5173/?demo=1
+```
+
+Sample mode includes selectable network nodes, refund activity ranges, decision filters, ticket evidence, and simulated local controls. It makes no API, model, sandbox, or Stripe requests. Light, dark, and system appearance settings persist in the browser. Remove `?demo=1` to use the connected backend; sample records are never substituted for live data automatically.
+
 Build once and start the Worker:
 
 ```sh

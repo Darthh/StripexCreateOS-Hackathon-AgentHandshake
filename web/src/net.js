@@ -28,7 +28,7 @@ export const EDGES = [
   ["vault", "stripe"],
 ];
 
-export function netDiagram(state) {
+export function netDiagram(state, selected = "") {
   const box = (role) => state.boxes.find((b) => b.role === role);
   const waking = state.tickets.some((t) => t.status === "waking" && t.lab === "live");
   const sub = (id) => {
@@ -44,10 +44,10 @@ export function netDiagram(state) {
     const b = box(id);
     return b ? b.status : "missing";
   };
-  return h`<svg class="net" viewBox="0 0 780 232" role="img" aria-label="Network: portal, Worker, maker and checker boxes, vault box, Stripe">
+  return h`<svg class="net" viewBox="0 0 780 232" role="group" aria-label="Network: portal, Worker, maker and checker boxes, vault box, Stripe">
     ${EDGES.map(([a, b]) => h`<path id="e-${a}-${b}" class="edge ${cls(a) === "running" && cls(b) === "running" ? "on" : ""}" d="${curve(a, b)}"/>`)}
     ${NODES.map(
-      (n) => h`<g class="node ${cls(n.id)}" transform="translate(${n.x},${n.y})">
+      (n) => h`<g class="node ${cls(n.id)} ${selected === n.id ? "selected" : ""}" transform="translate(${n.x},${n.y})" data-node="${n.id}" role="button" tabindex="0" aria-label="Inspect ${n.label}">
         <rect width="${n.w}" height="${H}"/>
         <text x="12" y="19">${n.label}</text>
         <text class="sub" x="12" y="35">${sub(n.id)}</text>

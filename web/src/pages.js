@@ -1,6 +1,6 @@
 // Page renderers. Each takes (state, ctx) and returns h`` markup.
 import { ago, h, icon, money, uptime } from "./html.js";
-import { netDiagram } from "./net.js";
+import { activityView, networkView, voteView } from "./visuals.js";
 
 export const STATUSES = [
   ["received", "Received"],
@@ -16,7 +16,7 @@ const CAP = 5000;
 // The only buttons that exist. Every one is admin-only.
 export function btn(ctx, text, ic, act, args = {}, opts = {}) {
   const off = !ctx.admin || opts.disabled;
-  const title = !ctx.admin ? "Admin only: sign in with Cloudflare Access" : opts.title || "";
+  const title = !ctx.admin ? "Sign in to manage this action" : opts.title || "";
   return h`<button class="btn ${opts.primary ? "primary" : ""} ${opts.danger ? "danger" : ""} ${opts.sm ? "sm" : ""}" data-act="${act}" data-args="${JSON.stringify(args)}" ${off ? "disabled" : ""} title="${title}">${icon(ic)}${text}</button>`;
 }
 
@@ -59,18 +59,22 @@ export function overview(state, ctx) {
   const refunded = state.tickets.filter((t) => t.status === "executed" && isToday(t.updated_at)).reduce((a, t) => a + t.amount_cents, 0);
   const blocked = state.attacks.filter((a) => a.result_now === "blocked").length;
   const bad = state.unauthorized.cents;
-  return h`${head("Overview", "Two independent AI agents must agree before money moves. Above $50, a human is the third key.", btn(ctx, "Show portal QR", "qr-code", "qr"))}
-  <div class="stats">
-    <div class="card stat"><div class="label">${icon("ticket")}Tickets today</div><div class="value">${today.length}</div></div>
-    <div class="card stat"><div class="label">${icon("banknote")}Refunds executed</div><div class="value">${money(refunded)}</div></div>
-    <div class="card stat"><div class="label">${icon("shield-check")}Attacks blocked</div><div class="value">${blocked}</div></div>
-    <div class="card stat ${bad > 0 ? "alarm" : ""}"><div class="label">${icon("siren")}Unauthorized</div><div class="value">${money(bad)}</div></div>
-  </div>
-  <div class="grid side">
-    <div class="card"><div class="card-head">${icon("network")}Live network<span class="sub">votes travel over the private lab network</span></div><div class="card-body net-wrap">${netDiagram(state)}</div></div>
-    <div class="card"><div class="card-head">${icon("list")}Recent tickets<span class="right"><a class="muted" href="/tickets" data-link>All</a></span></div>${ticketRows(state.tickets.slice(0, 8))}</div>
-  </div>
-  <div class="card" style="margin-top:16px"><div class="card-head">${icon("boxes")}Boxes<span class="sub">${state.boxes.length} of ${state.plan_limit} on the plan</span></div>${boxesTable(state, ctx)}</div>`;
+  const panel = ctx.ui.panel ?? "network";
+  const ready = state.boxes.filter((b) => b.status === "running").length;
+  const waiting = state.tickets.filter((t) => t.status === "needs_human").length;
+  const tabs = [["network", "Network flow", "network"], ["activity", "Refund activity", "chart-no-axes-combined"], ["votes", "Vote breakdown", "chart-pie"]];
+  return h`<div class="workspace-home">
+    <section class="request-hero" aria-labelledby="request-title"><div class="hero-eyebrow"><span class="hero-mark">${icon("handshake")}</span>Two agents. One verified decision.</div><h1 id="request-title">What should your agents verify?</h1><p>Turn a refund request into a decision you can inspect.</p>
+      <form class="request-composer" data-form="quick-request"><textarea name="request" aria-label="Describe a test refund request" placeholder="A customer's mug arrived damaged. Verify the order and review a $24.50 refund…" rows="2">${ctx.ui.composerText ?? ""}</textarea><div class="composer-tools"><button type="button" class="round-button" data-act="new_ticket" aria-label="Choose a test scenario">${icon("plus")}</button><span class="composer-tag">${icon("credit-card")}Stripe test mode</span><span class="composer-tag">${icon("bot")}Maker + Checker</span><a class="composer-tag policy-link" href="/proof" data-link>${icon("sliders-horizontal")}Policy</a><button class="submit-request" type="submit" aria-label="Review refund request" ${ctx.admin ? "" : "disabled"}>${icon("arrow-up")}</button></div></form>
+      <div class="suggestions">${state.scenarios.slice(0, 3).map((sc) => h`<button data-scenario="${sc.id}" ${ctx.admin ? "" : "disabled"}>${icon(sc.kind === "attack" ? "swords" : sc.fields?.amount_cents > 5000 ? "key-round" : "ticket")}${sc.name}${icon("arrow-up-right")}</button>`)}${!state.scenarios.length ? h`<span class="muted">Create a test ticket to see both agents at work.</span>` : ""}</div>
+    </section>
+    <section class="workspace-section"><div class="section-heading"><h2>Your workspace</h2><a href="/lab/live" data-link>View lab ${icon("chevron-right")}</a></div><div class="workspace-project"><span class="project-symbol">${icon("handshake")}</span><div class="project-info"><b>AgentHandshake</b><span>${icon("git-branch")}main <i>·</i> ${state.sample ? "Sample environment" : "CreateOS EU"}</span></div><span class="pill ${ready ? "green" : "gray"}"><span class="dot"></span>${ready ? `${ready} running` : "Not running"}</span><div class="project-quick-actions"><button data-panel="network" title="Inspect network" aria-label="Inspect network">${icon("network")}</button><button data-act="qr" ${ctx.admin ? "" : "disabled"} title="Show portal QR" aria-label="Show portal QR">${icon("qr-code")}</button><a href="/proof" data-link title="View isolation proof" aria-label="View isolation proof">${icon("shield-check")}</a></div></div>
+    <div class="workspace-metrics"><div><span>Tickets today</span><strong>${today.length}<small>requests</small></strong></div><div><span>Refunds executed</span><strong>${money(refunded)}<small>test USD</small></strong></div><div><span>Attacks blocked</span><strong>${blocked}<small>verified cases</small></strong></div><div><span>Human approvals</span><strong>${waiting}<a href="/approvals" data-link>${waiting ? "Review queue ↗" : "all clear"}</a></strong></div></div></section>
+    <section class="workspace-section visual-section" id="visualizations"><div class="section-heading"><div><h2>See how decisions happen</h2><p>Follow the evidence from request to refund.</p></div><span class="quiet-status"><span class="dot ${state.sample ? "voting" : "executed"}"></span>${state.sample ? "Sample visualization" : "Latest lab state"}</span></div><div class="visual-card"><div class="visual-toolbar"><div class="visual-tabs" role="tablist" aria-label="Visualization">${tabs.map(([value, name, glyph]) => h`<button role="tab" id="tab-${value}" aria-controls="visual-panel" aria-selected="${panel === value}" data-panel="${value}">${icon(glyph)}${name}</button>`)}</div><button class="icon-button" data-refresh aria-label="Refresh workspace" title="Refresh workspace">${icon("refresh-cw")}</button></div><div id="visual-panel" role="tabpanel" aria-labelledby="tab-${panel}">${panel === "activity" ? activityView(state, ctx) : panel === "votes" ? voteView(state, ctx) : networkView(state, ctx)}</div></div></section>
+    <section class="workspace-section"><div class="section-heading"><h2>Recent requests</h2><a href="/tickets?view=list" data-link>All tickets ${icon("chevron-right")}</a></div><div class="card recent-card">${ticketRows(state.tickets.slice(0, 4))}</div></section>
+    <section class="workspace-section"><div class="section-divider"><span>EXPLORE YOUR LAB</span></div><div class="explore-grid"><a class="explore-card" href="/red-team" data-link><span class="explore-icon">${icon("swords")}</span><h3>Challenge the agents</h3><p>Inspect attacks and review candidate fixes.</p><span class="explore-cta">Open red team ${icon("arrow-up-right")}</span></a><a class="explore-card" href="/eval" data-link><span class="explore-icon">${icon("flask-conical")}</span><h3>Check every decision</h3><p>Replay the cases that keep refunds in check.</p><span class="explore-cta">View evaluations ${icon("arrow-up-right")}</span></a><a class="explore-card" href="/audit" data-link><span class="explore-icon">${icon("scroll-text")}</span><h3>Follow the evidence</h3><p>Every vote, approval, and vault decision.</p><span class="explore-cta">Explore audit log ${icon("arrow-up-right")}</span></a></div></section>
+    <footer class="workspace-note">${icon("lock-keyhole")}Stripe test mode. ${state.sample ? "All data on this page is illustrative; no services are changed." : "No real money moves."}${bad > 0 ? h`<span class="bad">${money(bad)} unauthorized in the current test ledger</span>` : ""}</footer>
+  </div>`;
 }
 
 export function tickets(state, ctx) {

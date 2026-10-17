@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Agent Handshake: dual control for AI agents that move money. Stripe Projects x CreateOS Sandbox." />
     <meta name="color-scheme" content="dark light" />
+    <script>
+      try {
+        const theme = localStorage.getItem("agenthandshake-theme") || "system";
+        document.documentElement.dataset.theme = theme === "system" ? matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light" : theme;
+      } catch {}
+    </script>
     <title>Agent Handshake · dual control for AI agents</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23635bff'/%3E%3Ctext x='16' y='21' font-family='sans-serif' font-size='13' font-weight='700' text-anchor='middle' fill='%23ffffff'%3EAH%3C/text%3E%3C/svg%3E" />
   </head>
