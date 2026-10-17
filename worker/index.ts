@@ -57,10 +57,15 @@ app.get("/try", async (c) => {
   return url && portal?.status === "running" ? c.redirect(url, 302) : c.text("The portal box is not up right now.", 503);
 });
 
+// Callers get a generic error and an id; the detail (scrubbed of every secret) stays in the logs.
 app.onError((err, c) => {
-  const message = redact(err.message);
-  console.error(message);
-  return c.json({ ok: false, reason: message }, 500);
+  const id = crypto.randomUUID().slice(0, 8);
+  let detail = redact(err.message);
+  for (const v of [c.env.CREATEOS_SANDBOX_API_KEY, c.env.READ_STRIPE_KEY, c.env.MODEL_API_KEY, c.env.DATABASE_URL, c.env.APPROVAL_HMAC_KEY, c.env.RESEND_API_KEY]) {
+    if (v) detail = detail.replaceAll(v, "<redacted>");
+  }
+  console.error(`[${id}] ${detail}`);
+  return c.json({ ok: false, reason: "internal error", id }, 500);
 });
 
 export default app;

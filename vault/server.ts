@@ -11,7 +11,12 @@ import { type Charge, DEFAULT_POLICY, type Decision, decide, type Ticket, type V
 const DIR = process.env.VAULT_DIR ?? "/var/lib/vault";
 const LOG = `${DIR}/audit.jsonl`;
 const PORT = Number(process.env.PORT ?? 8080);
-const STRIPE_API = process.env.STRIPE_API ?? "https://api.stripe.com"; // overridden only by the test's fake Stripe
+// The integration test points this at a fake Stripe on loopback; nothing else is accepted.
+const STRIPE_API = process.env.STRIPE_API ?? "https://api.stripe.com";
+const stripeUrl = new URL(STRIPE_API);
+if (STRIPE_API !== "https://api.stripe.com" && !(stripeUrl.protocol === "http:" && stripeUrl.hostname === "127.0.0.1" && stripeUrl.pathname === "/")) {
+  throw new Error("vault refuses to start: STRIPE_API must be api.stripe.com");
+}
 mkdirSync(DIR, { recursive: true });
 
 // Secrets come from a 0600 file written by bootstrap, not from the sandbox env.
