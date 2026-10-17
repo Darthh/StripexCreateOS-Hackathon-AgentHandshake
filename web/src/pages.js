@@ -50,7 +50,7 @@ export function boxesTable(state, ctx, boxes = state.boxes) {
       (b) => h`<tr><td><b>${b.name}</b> <span class="muted mono">${b.id.slice(0, 14)}</span></td><td>${boxPill(b)}</td><td class="mono">${b.network}</td>
         <td class="mono">${b.egress === "127.0.0.1:9" ? "none (deny all)" : b.egress}</td><td>${proofMark(b.proof)}</td>
         <td class="mono">${b.status === "running" ? uptime(b.running_at) : "—"}</td>
-        <td>${b.role === "portal" ? "" : b.status === "running" ? btn(ctx, "Pause", "pause", "pause", { id: b.id }, { sm: true }) : b.status === "paused" ? btn(ctx, "Resume", "play", "resume", { id: b.id }, { sm: true }) : ""}</td></tr>`,
+        <td>${b.role === "portal" || b.role === "other" ? "" : b.status === "running" ? btn(ctx, "Pause", "pause", "pause", { id: b.id }, { sm: true }) : b.status === "paused" ? btn(ctx, "Resume", "play", "resume", { id: b.id }, { sm: true }) : ""}</td></tr>`,
     )}</tbody></table></div>`;
 }
 
@@ -251,7 +251,7 @@ export function proof(state, ctx) {
 
 export function labPage(state, ctx, which) {
   const shadow = which === "shadow";
-  const boxes = state.boxes.filter((b) => (shadow ? b.role.startsWith("shadow") : !b.role.startsWith("shadow") && b.role !== "fork"));
+  const boxes = state.boxes.filter((b) => (shadow ? b.role.startsWith("shadow") : !b.role.startsWith("shadow") && b.role !== "fork" && b.role !== "other"));
   const ts = state.tickets.filter((t) => t.lab === which);
   const sub = shadow
     ? state.lab.shadow

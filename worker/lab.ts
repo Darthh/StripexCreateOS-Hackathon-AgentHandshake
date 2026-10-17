@@ -717,10 +717,6 @@ export class Lab extends DurableObject<Env> {
 
   async snapshot(admin = false) {
     const sql = await this.db();
-    const roleOf = (b: Sandbox) => {
-      const sh = Object.entries(this.mem.shadow).find(([, id]) => id === b.id)?.[0];
-      return sh ? `shadow ${sh}` : ["portal", "maker", "checker", "vault", "attacker"].includes(b.name ?? "") ? b.name! : "fork";
-    };
     let boxError: string | null = null;
     const [boxes, tickets, auditRows, attacks, patches, forks, scenarios, money] = await Promise.all([
       liveBoxes(this.env).catch((e) => {
@@ -735,6 +731,15 @@ export class Lab extends DurableObject<Env> {
       sql`select * from scenarios order by kind, name`,
       this.unauthorized().catch(() => ({ cents: 0, refunds: [] })),
     ]);
+    // Only boxes this app created get a role; anything else on the account (e.g. a cos offload
+    // run) is shown as "other" rather than mislabelled as a fork on the lab network.
+    const forkIds = new Set(forks.map((f) => f.sandbox_id as string));
+    const roleOf = (b: Sandbox) => {
+      const sh = Object.entries(this.mem.shadow).find(([, id]) => id === b.id)?.[0];
+      if (sh) return `shadow ${sh}`;
+      if (["portal", "maker", "checker", "vault", "attacker"].includes(b.name ?? "")) return b.name!;
+      return forkIds.has(b.id) ? "fork" : "other";
+    };
     const portal = boxes.find((b) => b.name === "portal");
     this.mem.portalUp = !!portal;
     // A fresh Durable Object (redeploy, restart) has no alarm yet: start polling the portal.
@@ -742,7 +747,7 @@ export class Lab extends DurableObject<Env> {
     const snap = {
       boxes: boxes.map((b) => {
         const role = roleOf(b);
-        const net = role === "portal" ? "none" : role.startsWith("shadow") || (role === "attacker" && this.env.SHADOW_LAB === "true") ? SHADOW_NET : LAB_NET;
+        const net = role === "other" ? "—" : role === "portal" ? "none" : role.startsWith("shadow") || (role === "attacker" && this.env.SHADOW_LAB === "true") ? SHADOW_NET : LAB_NET;
         // Proofs live in Durable Object memory; after a restart, fall back to the audit log in Neon.
         const logged = auditRows.find((a) => a.kind === "egress_proof" && a.box === (b.name ?? b.id))?.data;
         return { ...view(b, role), proof: this.mem.proofs[b.name ?? b.id] ?? logged ?? null, network: net };
@@ -807,6 +812,8 @@ export class Lab extends DurableObject<Env> {
       case "pause":
       case "resume": {
         const b = await client(this.env).getSandbox(args.id);
+        const ours = ["maker", "checker", "vault", "attacker", "portal"].includes(b.name ?? "") || Object.values(this.mem.shadow).includes(b.id) || (await sql`select 1 from forks where sandbox_id = ${b.id}`).length > 0;
+        if (!ours) throw new Error("that sandbox was not created by Agent Handshake");
         if (b.name === "portal" && name === "pause") throw new Error("never pause the portal: a paused box serves nothing on its URL");
         await (name === "pause" ? b.pause() : b.resume());
         return { ok: true };
