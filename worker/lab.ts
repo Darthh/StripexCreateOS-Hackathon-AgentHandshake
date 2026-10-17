@@ -137,7 +137,9 @@ export class Lab extends DurableObject<Env> {
 
   async onJobFailed(job: Job) {
     if (job.data.ticketId && ["ticket", "agent", "finish"].includes(job.type)) {
-      await this.sql`update tickets set status = 'blocked', decision = ${JSON.stringify({ action: "block", reason: `orchestrator error: ${this.mem.lastError}`, keys: 0 })}, updated_at = now() where id = ${job.data.ticketId} and status not in ('executed','blocked','needs_human')`;
+      const blocked = await this.sql`update tickets set status = 'blocked', decision = ${JSON.stringify({ action: "block", reason: `orchestrator error: ${this.mem.lastError}`, keys: 0 })}, updated_at = now() where id = ${job.data.ticketId} and status not in ('executed','blocked','needs_human') returning id`;
+      // No peer may cast the second vote or overwrite this terminal failure.
+      if (blocked.length) this.mem.queue = this.mem.queue.filter((pending) => pending.data.ticketId !== job.data.ticketId);
     }
   }
 
@@ -358,11 +360,16 @@ export class Lab extends DurableObject<Env> {
 
   async jobAgent(d: { ticketId: string; lab: LabName; voter: "maker" | "checker"; job: AgentJob }) {
     const sql = await this.db();
+    const [ticket] = await sql`select status from tickets where id = ${d.ticketId}`;
+    if (!ticket || ["blocked", "executed", "needs_human"].includes(ticket.status)) return;
     const box = await this.boxFor(d.lab, d.voter);
     if (!box) throw new Error(`${d.voter} box missing`);
     // Another job (evidence fork, end-of-ticket sleep) can pause a shared voter between turns.
     if (box.status === "paused") await box.resume();
     if (["paused", "pausing", "resuming"].includes(box.status)) return 3000;
+    if (box.status !== "running") throw new Error(`${d.voter} box is not running`);
+    const vaultUrl = await this.wireLab(d.lab);
+    await box.files.upload("/opt/handshake/vault_url", vaultUrl);
     let vote: any = null;
     const final = await agentTurn(this.env, box, d.job, d.voter === "maker" ? MAKER_SYSTEM : CHECKER_SYSTEM, [VOTE_TOOL], async (_name, input) => {
       // The vote leaves from inside the box via the fixed script; the token never leaves the VM.
