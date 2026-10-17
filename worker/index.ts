@@ -1,7 +1,7 @@
 // One Worker: the Vite-built dashboard as static assets, the API under /api, and the Lab
 // Durable Object that orchestrates everything. Reads are public; every write is admin-only.
 import { Hono } from "hono";
-import { accessJwt, requireAdmin, verifyAccess } from "./access.ts";
+import { adminIdentity, LOGIN_HTML, requireAdmin, startSession } from "./access.ts";
 import { findBox } from "./boxes.ts";
 import { redact } from "./db.ts";
 
@@ -23,6 +23,7 @@ export type Env = {
   PUBLIC_URL: string;
   ACCESS_TEAM_DOMAIN?: string;
   ACCESS_AUD?: string;
+  ADMIN_TOKEN?: string;
   PROJECTS_STATUS?: string;
   SHADOW_LAB: string;
   PLAN_BOX_LIMIT: string;
@@ -33,12 +34,18 @@ const app = new Hono<{ Bindings: Env; Variables: { admin: string } }>();
 const lab = (env: Env) => env.LAB.get(env.LAB.idFromName("lab")) as unknown as import("./lab.ts").Lab;
 
 app.get("/api/health", (c) => c.json({ ok: true, service: "two-key" }));
-app.get("/api/state", async (c) => c.json(await lab(c.env).snapshot(!!(await verifyAccess(c.env, accessJwt(c))))));
+app.get("/api/state", async (c) => c.json(await lab(c.env).snapshot(!!(await adminIdentity(c)))));
 app.get("/api/live", (c) => lab(c.env).fetch(c.req.raw));
-app.get("/api/me", async (c) => c.json({ admin: !!(await verifyAccess(c.env, accessJwt(c))) }));
+app.get("/api/me", async (c) => c.json({ admin: !!(await adminIdentity(c)) }));
 
-// Cloudflare Access protects /api/admin/*; visiting this path signs you in and comes back.
-app.get("/api/admin/login", requireAdmin, (c) => c.redirect("/"));
+// Cloudflare Access protects /api/admin/*, so with Access this path signs you in and comes back.
+// Without Access, it shows the ADMIN_TOKEN form.
+app.get("/api/admin/login", async (c) => {
+  if (await adminIdentity(c)) return c.redirect("/");
+  if (!c.env.ADMIN_TOKEN) return c.text("Admin sign-in is not configured: set up Cloudflare Access or ADMIN_TOKEN.", 403);
+  return c.html(LOGIN_HTML);
+});
+app.post("/api/session", startSession);
 app.post("/api/admin/:action", requireAdmin, async (c) => {
   const body = await c.req.json().catch(() => ({}));
   try {
@@ -61,7 +68,7 @@ app.get("/try", async (c) => {
 app.onError((err, c) => {
   const id = crypto.randomUUID().slice(0, 8);
   let detail = redact(err.message);
-  for (const v of [c.env.CREATEOS_SANDBOX_API_KEY, c.env.READ_STRIPE_KEY, c.env.MODEL_API_KEY, c.env.DATABASE_URL, c.env.APPROVAL_HMAC_KEY, c.env.RESEND_API_KEY]) {
+  for (const v of [c.env.CREATEOS_SANDBOX_API_KEY, c.env.READ_STRIPE_KEY, c.env.MODEL_API_KEY, c.env.DATABASE_URL, c.env.APPROVAL_HMAC_KEY, c.env.RESEND_API_KEY, c.env.ADMIN_TOKEN]) {
     if (v) detail = detail.replaceAll(v, "<redacted>");
   }
   console.error(`[${id}] ${detail}`);

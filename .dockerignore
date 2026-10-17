@@ -1,0 +1,9 @@
+node_modules
+dist
+.wrangler
+.env
+.env.*
+.dev.vars
+.projects
+.git
+.playwright-mcp

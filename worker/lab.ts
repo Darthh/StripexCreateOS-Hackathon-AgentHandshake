@@ -419,15 +419,17 @@ export class Lab extends DurableObject<Env> {
       const p = safeJson(line);
       if (!p) continue;
       const customer = exportRows.find((c) => c.customer_email?.toLowerCase() === String(p.email).toLowerCase())?.customer ?? `unknown:${p.email}`;
-      await this.createTicket({ source: "portal", customer_id: customer, customer_email: p.email, charge_id: p.charge_id, amount_cents: p.amount_cents, reason_code: p.reason_code, free_text: p.message });
+      await this.createTicket({ id: `tk_${String(p.ref).replace(/W/g, "").slice(0, 24)}`, source: "portal", customer_id: customer, customer_email: p.email, charge_id: p.charge_id, amount_cents: p.amount_cents, reason_code: p.reason_code, free_text: p.message });
     }
     await this.save();
   }
 
-  async createTicket(t: { source: string; customer_id: string; customer_email?: string; charge_id: string; amount_cents: number; reason_code: string; free_text: string }, lab: LabName = "live") {
-    const id = uid(lab === "shadow" ? "sh" : "tk");
-    await (await this.db())`insert into tickets (id, lab, source, customer_id, customer_email, charge_id, amount_cents, reason_code, free_text)
-      values (${id}, ${lab}, ${t.source}, ${t.customer_id}, ${t.customer_email ?? null}, ${t.charge_id}, ${Math.round(Number(t.amount_cents))}, ${t.reason_code}, ${String(t.free_text ?? "").slice(0, 4000)})`;
+  async createTicket(t: { id?: string; source: string; customer_id: string; customer_email?: string; charge_id: string; amount_cents: number; reason_code: string; free_text: string }, lab: LabName = "live") {
+    const id = t.id ?? uid(lab === "shadow" ? "sh" : "tk");
+    const inserted = await (await this.db())`insert into tickets (id, lab, source, customer_id, customer_email, charge_id, amount_cents, reason_code, free_text)
+      values (${id}, ${lab}, ${t.source}, ${t.customer_id}, ${t.customer_email ?? null}, ${t.charge_id}, ${Math.round(Number(t.amount_cents))}, ${t.reason_code}, ${String(t.free_text ?? "").slice(0, 4000)})
+      on conflict (id) do nothing returning id`;
+    if (!inserted.length) return id; // another orchestrator already took this portal ticket
     this.emit({ type: "ticket", ticketId: id, status: "received" });
     await this.enqueue("ticket", { ticketId: id, lab });
     return id;
