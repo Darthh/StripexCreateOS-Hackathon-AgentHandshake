@@ -9,6 +9,7 @@
 # build
 node_modules/
 dist/
+build/
 .wrangler/
 *.log
 .playwright-mcp/

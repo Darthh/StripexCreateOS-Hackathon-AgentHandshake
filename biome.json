@@ -9,7 +9,8 @@
       "!.agents",
       "!.claude",
       "!.cursor",
-      "!worker/embedded.gen.ts"
+      "!worker/embedded.gen.ts",
+      "!build"
     ]
   },
   "linter": {

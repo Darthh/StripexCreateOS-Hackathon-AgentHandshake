@@ -4,6 +4,6 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY . .
-RUN npm run build && mkdir -p /data
+RUN npm run build && npx wrangler deploy --dry-run --outdir build && mkdir -p /data
 EXPOSE 8080
 CMD ["node", "scripts/serve.ts"]

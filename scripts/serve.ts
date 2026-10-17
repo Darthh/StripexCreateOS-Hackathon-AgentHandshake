@@ -15,7 +15,10 @@ const lines = SECRETS.filter((k) => process.env[k]).map((k) => {
 writeFileSync(".dev.vars", `${lines.join("\n")}\n`, { mode: 0o600 });
 const vars = VARS.filter((k) => process.env[k]).flatMap((k) => ["--var", `${k}:${process.env[k]}`]);
 
-const child = spawn(process.execPath, ["node_modules/wrangler/bin/wrangler.js", "dev", "--ip", "0.0.0.0", "--port", process.env.PORT ?? "8080", "--persist-to", process.env.PERSIST_TO ?? "/data/wrangler", ...vars], {
+// The Dockerfile pre-bundles the Worker (wrangler deploy --dry-run --outdir build). Serving that one
+// file with --no-bundle keeps wrangler from watching every module in node_modules, which exhausts
+// the container's inotify limit (EMFILE).
+const child = spawn(process.execPath, ["node_modules/wrangler/bin/wrangler.js", "dev", "build/index.js", "--no-bundle", "--ip", "0.0.0.0", "--port", process.env.PORT ?? "8080", "--persist-to", process.env.PERSIST_TO ?? "/data/wrangler", ...vars], {
   stdio: "inherit",
   env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" },
 });

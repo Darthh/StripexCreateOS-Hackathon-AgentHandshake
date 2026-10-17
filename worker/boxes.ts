@@ -12,7 +12,9 @@ const GONE = ["destroyed", "destroying", "failed"];
 export const LAB_NET = "twokey-lab";
 export const SHADOW_NET = "twokey-shadow";
 
-export const client = (env: Env) => new CreateosSandboxClient({ apiKey: env.CREATEOS_SANDBOX_API_KEY, baseUrl: env.CREATEOS_SANDBOX_BASE_URL });
+// An explicit fetch matters: with nodejs_compat the SDK otherwise detects "Node" and tries its
+// HTTP/2 connection pool (ALPN), which workerd doesn't implement, so every call fails.
+export const client = (env: Env) => new CreateosSandboxClient({ apiKey: env.CREATEOS_SANDBOX_API_KEY, baseUrl: env.CREATEOS_SANDBOX_BASE_URL, fetch: (input, init) => fetch(input, init) });
 
 export async function liveBoxes(env: Env): Promise<Sandbox[]> {
   return (await client(env).listSandboxes()).filter((b) => !GONE.includes(b.status));

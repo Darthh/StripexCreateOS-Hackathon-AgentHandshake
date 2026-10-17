@@ -703,8 +703,12 @@ export class Lab extends DurableObject<Env> {
       const sh = Object.entries(this.mem.shadow).find(([, id]) => id === b.id)?.[0];
       return sh ? `shadow ${sh}` : ["portal", "maker", "checker", "vault", "attacker"].includes(b.name ?? "") ? b.name! : "fork";
     };
+    let boxError: string | null = null;
     const [boxes, tickets, auditRows, attacks, patches, forks, scenarios, money] = await Promise.all([
-      liveBoxes(this.env).catch(() => [] as Sandbox[]),
+      liveBoxes(this.env).catch((e) => {
+        boxError = redact(`CreateOS: ${e.message}`); // surface it instead of showing "no boxes"
+        return [] as Sandbox[];
+      }),
       sql`select id, lab, source, customer_id, customer_email, charge_id, amount_cents, reason_code, free_text, status, keys, decision, maker, checker, refund_id, created_at, updated_at from tickets order by created_at desc limit 100`,
       sql`select id, at, lab, ticket_id, box, kind, data from audit order by id desc limit 300`,
       sql`select * from attacks order by created_at desc`,
@@ -731,7 +735,7 @@ export class Lab extends DurableObject<Env> {
       portal_url: portal?.data.ingress_url_template?.replace("<port>", "8080") ?? null,
       plan_limit: Number(this.env.PLAN_BOX_LIMIT),
       projects: safeJson(this.env.PROJECTS_STATUS ?? "[]") ?? [],
-      lab: { shadow: this.env.SHADOW_LAB === "true", model: this.env.MODEL, queue: this.mem.queue.map((j) => ({ type: j.type, at: j.at, ticketId: j.data.ticketId ?? null })), current: this.mem.current ?? null, error: this.mem.lastError ?? null },
+      lab: { shadow: this.env.SHADOW_LAB === "true", model: this.env.MODEL, queue: this.mem.queue.map((j) => ({ type: j.type, at: j.at, ticketId: j.data.ticketId ?? null })), current: this.mem.current ?? null, error: this.mem.lastError ?? boxError },
       policy: this.mem.policy,
     };
     return admin ? snap : scrub(snap);
