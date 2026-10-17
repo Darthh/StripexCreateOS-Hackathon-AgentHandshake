@@ -80,4 +80,3 @@ export function createosTarget() {
   return { project, environment: env.id, endpoint: env.extra?.endpoint || "" };
 }
 
-export const PLAN_LIMITS: Record<string, number> = { free: 1, "beginner-monthly": 5, "pro-monthly": 20, "enterprise-monthly": 30 };

@@ -11,7 +11,7 @@ const git = (...a: string[]) => execFileSync("git", a, { encoding: "utf8" }).tri
 git("fetch", "-q", "origin", "main");
 if (git("rev-parse", "HEAD") !== git("rev-parse", "origin/main")) warn("local HEAD is not origin/main: CreateOS builds what is on GitHub, so push first");
 
-const vars = { ...workerSecrets(), PLAN_BOX_LIMIT: process.env.PLAN_BOX_LIMIT ?? "1", ...(target.endpoint && { PUBLIC_URL: target.endpoint }) };
+const vars = { ...workerSecrets(), PLAN_BOX_LIMIT: process.env.PLAN_BOX_LIMIT ?? "5", ...(target.endpoint && { PUBLIC_URL: target.endpoint }) };
 createosCli(["env", "set", "--project", target.project, "--environment", target.environment, ...Object.entries(vars).map(([k, v]) => `${k}=${v}`)]);
 ok(`CreateOS env set: ${Object.keys(vars).join(", ")} (VAULT_STRIPE_KEY withheld)`);
 

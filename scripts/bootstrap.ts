@@ -6,7 +6,7 @@ import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { Sandbox } from "@nodeops-createos/sandbox";
 import { existsSync } from "node:fs";
-import { createos, createosCli, createosTarget, EU, fail, loadEnv, ok, PLAN_LIMITS, projects, provisioned, warn, wrangler } from "./lib.ts";
+import { createos, createosCli, createosTarget, EU, fail, loadEnv, ok, projects, provisioned, warn, wrangler } from "./lib.ts";
 import { syncSecrets } from "./secrets-sync.ts";
 
 const PLAN = process.env.CREATEOS_PLAN ?? "free"; // free | beginner-monthly | pro-monthly
@@ -49,7 +49,8 @@ ok("Stripe keys are test-mode restricted keys");
 // 3. CreateOS on the EU control plane.
 const cos = createos(env);
 const me = await cos.whoami().catch((e) => fail(`CreateOS key rejected by ${EU}: ${e.message}`));
-const limit = PLAN_LIMITS[PLAN] ?? 1;
+// Concurrent-box cap: 5 on hackathon accounts (the control plane says so in its 429). Override if yours differs.
+const limit = Number(process.env.PLAN_BOX_LIMIT ?? 5);
 ok(`CreateOS key verified against ${EU} (user ${me.user_id.slice(0, 8)}…, ${me.stats.running} running / ${me.stats.paused} paused, plan limit ${limit})`);
 
 // 4. The lab network and the vault box.

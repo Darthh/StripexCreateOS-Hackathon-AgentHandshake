@@ -22,7 +22,9 @@
     "MODEL": "nvidia/nemotron-3-super-120b-a12b:free",
     "MODEL_BASE_URL": "https://openrouter.ai/api",
     "SHADOW_LAB": "false",
-    "PLAN_BOX_LIMIT": "1",
+    // Hackathon accounts run 5 sandboxes at once (verified 2026-10-17: the 6th gets
+    // "429 sandbox concurrent quota reached (5 / 5)") even on the Free plan label.
+    "PLAN_BOX_LIMIT": "5",
     "PUBLIC_URL": "https://lunaterminal.com"
   }
 }
