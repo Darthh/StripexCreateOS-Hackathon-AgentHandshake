@@ -743,7 +743,9 @@ export class Lab extends DurableObject<Env> {
       boxes: boxes.map((b) => {
         const role = roleOf(b);
         const net = role === "portal" ? "none" : role.startsWith("shadow") || (role === "attacker" && this.env.SHADOW_LAB === "true") ? SHADOW_NET : LAB_NET;
-        return { ...view(b, role), proof: this.mem.proofs[b.name ?? b.id] ?? null, network: net };
+        // Proofs live in Durable Object memory; after a restart, fall back to the audit log in Neon.
+        const logged = auditRows.find((a) => a.kind === "egress_proof" && a.box === (b.name ?? b.id))?.data;
+        return { ...view(b, role), proof: this.mem.proofs[b.name ?? b.id] ?? logged ?? null, network: net };
       }),
       tickets,
       audit: auditRows,
