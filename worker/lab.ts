@@ -551,7 +551,8 @@ export class Lab extends DurableObject<Env> {
     await box.files.upload("/var/twokey/suite/suite.ts", SUITE_TS);
     // Candidate patches are model-written code: run them unprivileged.
     await box.sh("id agent >/dev/null 2>&1 || useradd -m -s /bin/sh agent");
-    const r = await box.runCommand("runuser", ["-u", "agent", "--", "node", "/var/twokey/suite/suite.ts"], { timeoutMs: 60_000 });
+    // Clean env too (like run.py): model-written code inherits nothing from the exec.
+    const r = await box.runCommand("env", ["-i", "PATH=/usr/local/bin:/usr/bin:/bin", "HOME=/home/agent", "runuser", "-u", "agent", "--", "node", "/var/twokey/suite/suite.ts"], { timeoutMs: 60_000 });
     return safeJson(r.result.stdout) ?? { passed: false, error: (r.result.stderr || r.result.stdout).slice(0, 800), results: [] };
   }
 
