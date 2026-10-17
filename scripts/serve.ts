@@ -11,7 +11,6 @@ const OVERRIDABLE_VARS = ["PUBLIC_URL", "PLAN_BOX_LIMIT", "SHADOW_LAB", "MODEL"]
 
 const cfg = unstable_readConfig({ config: "wrangler.jsonc" });
 const fromEnv = (keys: string[]) => Object.fromEntries(keys.filter((k) => process.env[k]).map((k) => [k, process.env[k]!]));
-const runFirst = cfg.assets?.run_worker_first;
 
 // Miniflare 5 (beta) has a new options schema; the v4 shape is stable and converts losslessly.
 const options = convertV4MiniflareOptions({
@@ -27,8 +26,10 @@ const options = convertV4MiniflareOptions({
   assets: {
     directory: "dist",
     binding: "ASSETS",
-    routerConfig: { has_user_worker: true, ...(Array.isArray(runFirst) ? { static_routing: { user_worker: runFirst } } : { invoke_user_worker_ahead_of_assets: runFirst === true }) },
-    assetConfig: { not_found_handling: cfg.assets?.not_found_handling ?? "single-page-application", has_static_routing: Array.isArray(runFirst) },
+    // Miniflare's beta ignores run_worker_first patterns for browser navigations, so the Worker
+    // runs first for everything here and hands non-API paths to ASSETS (see worker/index.ts).
+    routerConfig: { has_user_worker: true, invoke_user_worker_ahead_of_assets: true },
+    assetConfig: { not_found_handling: cfg.assets?.not_found_handling ?? "single-page-application" },
   },
 });
 const mf = new Miniflare({ ...options, log: new Log(LogLevel.INFO), resourcePersistencePath: process.env.PERSIST_TO ?? "/data/miniflare" }); // Durable Object state; log forwards console.* to stdout

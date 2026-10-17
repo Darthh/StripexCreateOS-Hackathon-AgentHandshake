@@ -64,6 +64,10 @@ app.get("/try", async (c) => {
   return url && portal?.status === "running" ? c.redirect(url, 302) : c.text("The portal box is not up right now.", 503);
 });
 
+// Everything else is the dashboard. On Cloudflare the platform serves assets before the Worker
+// (run_worker_first covers only /api/* and /try), so this only runs in the CreateOS container.
+app.get("*", (c) => c.env.ASSETS.fetch(c.req.raw));
+
 // Callers get a generic error and an id; the detail (scrubbed of every secret) stays in the logs.
 app.onError((err, c) => {
   const id = crypto.randomUUID().slice(0, 8);
