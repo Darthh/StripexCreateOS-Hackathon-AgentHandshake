@@ -1,0 +1,46 @@
+{
+  "name": "two-key",
+  "private": true,
+  "description": "StripexCreateOS Hackathon Two-Key: dual control for AI agents that move money",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.ts",
+    "secrets:sync": "node scripts/secrets-sync.ts",
+    "seed": "node scripts/seed.ts",
+    "reset": "node scripts/reset.ts",
+    "dev": "vite",
+    "build": "node scripts/embed.ts && vite build",
+    "deploy": "npm run build && wrangler deploy",
+    "lint": "node scripts/embed.ts && biome lint . && tsc --noEmit",
+    "test": "node --test \"shared/**/*.test.ts\" \"vault/**/*.test.ts\"",
+    "scan": "gitleaks git --redact --no-banner",
+    "prepare": "git config core.hooksPath .githooks || true",
+    "teardown": "node scripts/teardown.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@neondatabase/serverless": "^1.2.0",
+    "@nodeops-createos/sandbox": "^0.8.2",
+    "hono": "^4.13.13",
+    "lucide": "^1.59.0",
+    "qrcode-generator": "^2.0.4",
+    "stripe": "^23.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@cloudflare/workers-types": "^5.20261016.1",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.4",
+    "wrangler": "^4.151.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "workerd@1.20261012.1": true
+  }
+}

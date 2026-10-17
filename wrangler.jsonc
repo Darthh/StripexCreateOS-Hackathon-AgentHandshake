@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "two-key",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/try"]
+  },
+  "durable_objects": { "bindings": [{ "name": "LAB", "class_name": "Lab" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Lab"] }],
+  "workers_dev": true,
+  "routes": [{ "pattern": "lunaterminal.com", "custom_domain": true }],
+  "observability": { "enabled": true },
+  // Workers Free: no "limits.cpu_ms". The agent loops wait on I/O (LLM + sandbox
+  // exec), which doesn't count as CPU. On Workers Paid add "limits": { "cpu_ms": 300000 }.
+  "vars": {
+    "CREATEOS_SANDBOX_BASE_URL": "https://api-eu.sb.createos.sh",
+    "MODEL": "nvidia/nemotron-3-super-120b-a12b:free",
+    "MODEL_BASE_URL": "https://openrouter.ai/api",
+    "SHADOW_LAB": "false",
+    "PLAN_BOX_LIMIT": "1",
+    "PUBLIC_URL": "https://lunaterminal.com"
+  }
+}

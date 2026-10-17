@@ -1,0 +1,29 @@
+{
+  "files": {
+    "includes": [
+      "**",
+      "!dist",
+      "!node_modules",
+      "!.wrangler",
+      "!.projects",
+      "!.agents",
+      "!.claude",
+      "!.cursor",
+      "!worker/embedded.gen.ts"
+    ]
+  },
+  "linter": {
+    "rules": {
+      "recommended": true,
+      "style": {
+        "noNonNullAssertion": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": false
+  }
+}

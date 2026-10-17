@@ -1,0 +1,71 @@
+/* Design tokens. Dark by default; light follows prefers-color-scheme (no theme button). */
+:root {
+  --bg: #1a1a19;
+  --sidebar: #151514;
+  --surface: #1d1d1c;
+  --surface-2: #252524;
+  --border: #2c2b29;
+  --text: #eceae5;
+  --text-2: #b5b2ab;
+  --text-3: #9a968f;
+  --accent: #8e9af3;
+  --accent-ink: #12131f;
+
+  --green: #5cba86;
+  --amber: #d8a443;
+  --red: #e57d70;
+  --violet: #a98deb;
+  --blue: #72a5ea;
+  --gray: #8a877f;
+
+  --font: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --fs: 13.5px;
+  --fs-sm: 12px;
+  --fs-xs: 11px;
+
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 10px;
+  --sidebar-w: 252px;
+  --topbar-h: 46px;
+  --gutter: 24px;
+
+  --ease: 140ms ease;
+  --shadow: 0 8px 30px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fbfaf8;
+    --sidebar: #f4f3f0;
+    --surface: #ffffff;
+    --surface-2: #f6f5f2;
+    --border: #e9e7e2;
+    --text: #1d1c1a;
+    --text-2: #4a4843;
+    --text-3: #6f6c66;
+    --accent: #4b5bd6;
+    --accent-ink: #ffffff;
+
+    --green: #2f8f5b;
+    --amber: #a87412;
+    --red: #c4493b;
+    --violet: #7a58cc;
+    --blue: #3b74c4;
+    --gray: #8a877f;
+    --shadow: 0 8px 30px rgb(0 0 0 / 0.12);
+    color-scheme: light;
+  }
+}
+
+/* Ticket status colors */
+:root {
+  --st-received: var(--gray);
+  --st-waking: var(--amber);
+  --st-voting: var(--violet);
+  --st-executed: var(--green);
+  --st-blocked: var(--red);
+  --st-needs_human: var(--blue);
+}
