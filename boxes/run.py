@@ -1,14 +1,21 @@
-# Fixed runner inside each AI box. The agent's code is in /work/evidence/run_N.py;
-# this runs it and records stdout/stderr/exit next to it, so the evidence hash
-# covers exactly what the agent ran and what it saw.
+# Fixed runner inside each AI box (runs as root). The orchestrator uploads the agent's
+# code to /var/twokey/evidence/run_N.py; this runs it and records stdout/stderr/exit
+# next to it, so the evidence hash covers exactly what the agent ran and what it saw.
 #
-# The agent's code runs as the unprivileged "agent" user with a scrubbed env, so it
-# can never read VOTE_TOKEN (not from os.environ, not from /proc of root processes).
-import json, os, subprocess, sys
-n = sys.argv[1]
+# Isolation: the agent's code runs as the unprivileged "agent" user with a scrubbed env,
+# so it can't read VOTE_TOKEN (not from os.environ, not from /proc of root processes).
+# /opt/twokey, /var/twokey/input and /var/twokey/evidence are root-owned and read-only
+# for the agent, so it can't plant symlinks for root to write through. /work is its scratch.
+import json, subprocess, sys
+n = int(sys.argv[1])
 env = {"PATH": "/usr/local/bin:/usr/bin:/bin", "HOME": "/home/agent", "LANG": "C.UTF-8"}
-p = subprocess.run([sys.executable, f"/work/evidence/run_{n}.py"], capture_output=True, text=True,
-                   timeout=60, cwd="/work", env=env, user="agent", group="agent")
-out = {"stdout": p.stdout[-20000:], "stderr": p.stderr[-20000:], "exit_code": p.returncode}
-open(f"/work/evidence/run_{n}.out", "w").write(json.dumps(out))
+try:
+    p = subprocess.run([sys.executable, f"/var/twokey/evidence/run_{n}.py"], capture_output=True, text=True,
+                       timeout=60, cwd="/work", env=env, user="agent", group="agent")
+    out = {"stdout": p.stdout[-20000:], "stderr": p.stderr[-20000:], "exit_code": p.returncode}
+except subprocess.TimeoutExpired:
+    out = {"stdout": "", "stderr": "timed out after 60 s", "exit_code": 124}
+subprocess.run(["pkill", "-KILL", "-u", "agent"])  # nothing the agent started outlives its run
+with open(f"/var/twokey/evidence/run_{n}.out", "w") as f:
+    f.write(json.dumps(out))
 print(json.dumps(out))

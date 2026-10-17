@@ -4,7 +4,7 @@
 import glob, hashlib, json, os, sys, urllib.request
 vote = json.loads(sys.argv[1])
 h = hashlib.sha256()
-for f in sorted(glob.glob("/work/evidence/run_*")):
+for f in sorted(glob.glob("/var/twokey/evidence/run_*")):
     h.update(open(f, "rb").read())
 body = {
     "token": os.environ["VOTE_TOKEN"],

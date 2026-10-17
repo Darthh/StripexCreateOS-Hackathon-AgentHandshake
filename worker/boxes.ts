@@ -7,7 +7,6 @@ export type Role = "portal" | "maker" | "checker" | "vault" | "attacker";
 // An empty allowlist means "allow all" and there is no deny token, so "none" is one
 // rule that goes nowhere. Everything not on the list is dropped.
 export const DENY = ["127.0.0.1:9"];
-const PYPI = ["pypi.org:443", "files.pythonhosted.org:443"];
 const GONE = ["destroyed", "destroying", "failed"];
 
 export const LAB_NET = "twokey-lab";
@@ -44,17 +43,6 @@ export async function assertCapacity(env: Env, extra = 1) {
   const n = (await liveBoxes(env)).length;
   const limit = Number(env.PLAN_BOX_LIMIT);
   if (n + extra > limit) throw new Error(`CreateOS plan limit: ${n}/${limit} boxes in use (paused boxes count). Upgrade the plan or destroy a box.`);
-}
-
-// Python boxes: install pandas with egress limited to PyPI, then lock down to nothing.
-export async function createPythonBox(env: Env, name: string, networkId: string, envs: Record<string, string>, files: Record<string, string>) {
-  await assertCapacity(env);
-  const box = await client(env).createSandbox({ name, shape: "s-1vcpu-1gb", rootfs: "devbox:1", networks: [{ id: networkId }], egress: PYPI, envs });
-  await box.sh("mkdir -p /work/evidence /work/data /opt/twokey");
-  for (const [path, body] of Object.entries(files)) await box.files.upload(path, body);
-  await box.sh("python3 -c 'import pandas' 2>/dev/null || python3 -m pip install -q --break-system-packages pandas", { timeoutMs: 300_000 });
-  await box.setEgress(DENY);
-  return box;
 }
 
 export type EgressProof = { ok: boolean; detail: string; at: string };
