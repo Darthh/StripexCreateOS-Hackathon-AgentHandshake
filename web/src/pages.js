@@ -67,7 +67,7 @@ export function overview(state, ctx) {
     <div class="card stat ${bad > 0 ? "alarm" : ""}"><div class="label">${icon("siren")}Unauthorized</div><div class="value">${money(bad)}</div></div>
   </div>
   <div class="grid side">
-    <div class="card"><div class="card-head">${icon("network")}Live network<span class="sub">votes travel over the private lab network</span></div><div class="card-body">${netDiagram(state)}</div></div>
+    <div class="card"><div class="card-head">${icon("network")}Live network<span class="sub">votes travel over the private lab network</span></div><div class="card-body net-wrap">${netDiagram(state)}</div></div>
     <div class="card"><div class="card-head">${icon("list")}Recent tickets<span class="right"><a class="muted" href="/tickets" data-link>All</a></span></div>${ticketRows(state.tickets.slice(0, 8))}</div>
   </div>
   <div class="card" style="margin-top:16px"><div class="card-head">${icon("boxes")}Boxes<span class="sub">${state.boxes.length} of ${state.plan_limit} on the plan</span></div>${boxesTable(state, ctx)}</div>`;

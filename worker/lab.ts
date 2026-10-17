@@ -780,6 +780,12 @@ export class Lab extends DurableObject<Env> {
         await b.pause(); // back to frozen
         return { files: r.result.stdout };
       }
+      case "portal": {
+        // "Show portal QR" brings the public portal box up if it isn't yet.
+        const portal = await findBox(this.env, "portal");
+        if (!portal && !this.mem.queue.some((j) => j.type === "box" && j.data.role === "portal")) await this.enqueue("box", { role: "portal" });
+        return { url: portal?.data.ingress_url_template?.replace("<port>", "8080") ?? null, note: portal ? "Portal is up" : "Starting the portal box…" };
+      }
       case "setup":
         for (const role of ["maker", "checker", "portal", "attacker"]) if (!(await findBox(this.env, role))) await this.enqueue("box", { role });
         return { ok: true };

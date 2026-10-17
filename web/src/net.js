@@ -7,7 +7,7 @@ const NODES = [
   { id: "maker", label: "Maker", x: 348, y: 22, w: 118 },
   { id: "checker", label: "Checker", x: 348, y: 164, w: 118 },
   { id: "vault", label: "Vault", x: 512, y: 93, w: 118 },
-  { id: "stripe", label: "Stripe test", x: 668, y: 93, w: 92 },
+  { id: "stripe", label: "Stripe test", x: 656, y: 93, w: 112 },
 ];
 const H = 46;
 const at = (id) => NODES.find((n) => n.id === id);
