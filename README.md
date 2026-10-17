@@ -266,9 +266,9 @@ Admin writes require same-origin JSON. Authentication accepts a verified Cloudfl
 
 The secret builder rejects the vault key, live Stripe keys, and full `sk_test_` keys from outgoing Worker secrets. Prefix checks cannot validate a restricted key's permissions; configure those in Stripe.
 
-Commit the CLI-generated [`.projects/state.json`](.projects/state.json): it describes the shared service stack and lets submission tools verify Stripe Projects initialization. [Stripe's file reference](https://docs.stripe.com/projects#create-a-project) identifies this manifest as version-controlled metadata.
+Commit the CLI-generated [`.projects/state.json`](.projects/state.json) and [`.projects/state.local.json`](.projects/state.local.json): they describe the shared service stack and identify the project and resource associations that submission tools need to verify Stripe Projects initialization. [Stripe's file reference](https://docs.stripe.com/projects#create-a-project) identifies both files as version-controlled metadata.
 
-Keep `.env`, `.env.local`, `.dev.vars`, `.createos.json`, and every other file under `.projects/` untracked in this public repository, including account overrides, credential vaults and caches. The pre-push hook permits only the shared manifest and runs Gitleaks. Do not put credentials into tickets, screenshots, examples, issues, or model prompts. Let the Stripe Projects CLI maintain the manifest rather than editing it manually.
+Keep `.env`, `.env.local`, `.dev.vars`, `.createos.json`, and every other file under `.projects/` untracked in this public repository, including credential vaults, caches, and test state. The pre-push hook permits only the two metadata files and runs Gitleaks. Do not put credentials into tickets, screenshots, examples, issues, or model prompts. Let the Stripe Projects CLI maintain both metadata files rather than editing them manually.
 
 ### Runtime settings
 

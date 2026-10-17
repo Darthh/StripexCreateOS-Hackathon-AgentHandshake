@@ -1,0 +1,163 @@
+{
+  "version": 4,
+  "project": {
+    "catalog": "prod",
+    "initializedAt": "2026-10-17T16:55:26.222Z",
+    "merchantDisplayName": null,
+    "merchantId": "acct_1UREqw46zUCb4SrS",
+    "projectId": "project_61VayqaemrPrxWM7a16VacoIDESQH4XFD5mu3oW6y9vM",
+    "projectName": "createosxstripe"
+  },
+  "providers": {
+    "createos": {
+      "accountRequestId": "fprvcnn_61VactPkM5opZy4IR16VacoIDESQH4XFD5mu3oW6yUrg",
+      "configuration": {},
+      "linkedAt": "2026-10-16T17:28:51.398Z",
+      "providerId": "prvdr_61V0eGC6sUPXoATb051se",
+      "providerName": "createos",
+      "redirectUrl": null,
+      "requestedAt": "2026-10-16T17:28:51.398Z",
+      "status": "complete"
+    },
+    "neon": {
+      "accountRequestId": "facctrq_61Vb17sA9rSPqGmHw16VacoIDESQH4XFD5mu3oW6yH9k",
+      "configuration": {},
+      "linkedAt": "2026-10-17T19:21:27.447Z",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "redirectUrl": null,
+      "requestedAt": "2026-10-17T19:21:27.446Z",
+      "status": "complete"
+    },
+    "openrouter": {
+      "accountRequestId": "facctrq_61Vb18FdZe074SUqe16VacoIDESQH4XFD5mu3oW6y43k",
+      "configuration": {},
+      "linkedAt": "2026-10-17T19:21:49.928Z",
+      "providerId": "prvdr_61URImmFACEuDHEx651IO",
+      "providerName": "OpenRouter",
+      "redirectUrl": null,
+      "requestedAt": "2026-10-17T19:21:49.928Z",
+      "status": "complete"
+    },
+    "resend": {
+      "accountRequestId": "facctrq_61Vb18485Y3GXycLz16VacoIDESQH4XFD5mu3oW6y1Bo",
+      "configuration": {},
+      "linkedAt": "2026-10-17T19:21:38.904Z",
+      "providerId": "prvdr_61VFXTzsszWb1r1S25KMa",
+      "providerName": "Resend",
+      "redirectUrl": null,
+      "requestedAt": "2026-10-17T19:21:38.904Z",
+      "status": "complete",
+      "providerAccount": {
+        "id": "ae4b1394-4a99-4fc1-87bb-29dd1f7e93cb",
+        "display_name": "patrickv.disc",
+        "primary_email": "patrickv.disc@gmail.com",
+        "link_action": "created"
+      }
+    }
+  },
+  "resources": {
+    "createos-plan": {
+      "configuration": {},
+      "createdAt": "2026-10-17T16:55:41.554Z",
+      "lastRevealedAt": "2026-10-17T16:55:41.912Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "createos-plan",
+      "providerId": "prvdr_61V0eGC6sUPXoATb051se",
+      "providerName": "createos",
+      "resourceId": "fres_61VayqoRBEjvlNIeB16VacoIDESQH4XFD5mu3oW6yIt6",
+      "serviceId": "free"
+    },
+    "createos-project": {
+      "configuration": {},
+      "createdAt": "2026-10-17T16:55:49.660Z",
+      "lastRevealedAt": "2026-10-17T16:55:50.039Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "createos-project",
+      "providerId": "prvdr_61V0eGC6sUPXoATb051se",
+      "providerName": "createos",
+      "resourceId": "fres_61Vayqwn0o9ZH4IiB16VacoIDESQH4XFD5mu3oW6y2ZU",
+      "serviceId": "project"
+    },
+    "neon-plan": {
+      "configuration": {},
+      "createdAt": "2026-10-17T19:21:29.620Z",
+      "lastRevealedAt": "2026-10-17T19:21:30.051Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "neon-plan",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "resourceId": "fres_61Vb17vzQW0HZgg2p16VacoIDESQH4XFD5mu3oW6y4jw",
+      "serviceId": "free"
+    },
+    "neon-postgres": {
+      "configuration": {},
+      "createdAt": "2026-10-17T19:21:33.970Z",
+      "lastRevealedAt": "2026-10-17T19:21:34.406Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "neon-postgres",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "resourceId": "fres_61Vb17zgfYYBako2M16VacoIDESQH4XFD5mu3oW6yTN2",
+      "serviceId": "postgres"
+    },
+    "openrouter-api": {
+      "configuration": {},
+      "createdAt": "2026-10-17T19:21:56.755Z",
+      "lastRevealedAt": "2026-10-17T19:21:57.314Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "openrouter-api",
+      "providerId": "prvdr_61URImmFACEuDHEx651IO",
+      "providerName": "OpenRouter",
+      "resourceId": "fres_61Vb18MqDjXhI5zkP16VacoIDESQH4XFD5mu3oW6y4oK",
+      "serviceId": "api"
+    },
+    "openrouter-plan": {
+      "configuration": {},
+      "createdAt": "2026-10-17T19:21:52.072Z",
+      "lastRevealedAt": "2026-10-17T19:21:52.616Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "openrouter-plan",
+      "providerId": "prvdr_61URImmFACEuDHEx651IO",
+      "providerName": "OpenRouter",
+      "resourceId": "fres_61Vb18HbgaMg6sfDw16VacoIDESQH4XFD5mu3oW6yUPI",
+      "serviceId": "free"
+    },
+    "resend-email": {
+      "configuration": {},
+      "createdAt": "2026-10-17T19:21:44.129Z",
+      "lastRevealedAt": "2026-10-17T19:21:44.607Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "resend-email",
+      "providerId": "prvdr_61VFXTzsszWb1r1S25KMa",
+      "providerName": "Resend",
+      "resourceId": "fres_61Vb18AiCbSDZENIe16VacoIDESQH4XFD5mu3oW6y59c",
+      "serviceId": "email"
+    },
+    "resend-plan": {
+      "configuration": {},
+      "createdAt": "2026-10-17T19:21:40.216Z",
+      "lastRevealedAt": "2026-10-17T19:21:40.692Z",
+      "lastStatus": "complete",
+      "livemode": true,
+      "name": "resend-plan",
+      "providerId": "prvdr_61VFXTzsszWb1r1S25KMa",
+      "providerName": "Resend",
+      "resourceId": "fres_61Vb186MID8NJqKsQ16VacoIDESQH4XFD5mu3oW6yHwe",
+      "serviceId": "free"
+    }
+  },
+  "managedProjectVariableEnvKeys": {
+    ".env": [
+      "READ_STRIPE_KEY",
+      "VAULT_STRIPE_KEY"
+    ]
+  }
+}

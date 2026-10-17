@@ -22,6 +22,7 @@ worker/embedded.gen.ts
 .env
 .env.*
 !.env.example
-# Publish Stripe's shared stack manifest; keep all other Projects files private.
+# Publish Stripe's stack and project identity metadata; keep other Projects files private.
 /.projects/*
 !/.projects/state.json
+!/.projects/state.local.json
