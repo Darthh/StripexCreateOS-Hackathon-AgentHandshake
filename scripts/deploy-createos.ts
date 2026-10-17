@@ -3,7 +3,8 @@
 // committed, pushed files ever ship (.env, .env.local and .projects are gitignored and pre-push
 // checked). Secrets come from the same builder as secrets:sync, which refuses the money key.
 import { execFileSync } from "node:child_process";
-import { createosCli, createosTarget, ok, warn } from "./lib.ts";
+import { createosCli, createosTarget, loadEnv, ok, warn } from "./lib.ts";
+import { syncCreateosRuntime } from "./createos-runtime.ts";
 import { workerSecrets } from "./secrets-sync.ts";
 
 const target = createosTarget();
@@ -12,8 +13,8 @@ git("fetch", "-q", "origin", "main");
 if (git("rev-parse", "HEAD") !== git("rev-parse", "origin/main")) warn("local HEAD is not origin/main: CreateOS builds what is on GitHub, so push first");
 
 const vars = { ...workerSecrets(), PLAN_BOX_LIMIT: process.env.PLAN_BOX_LIMIT ?? "5", ...(target.endpoint && { PUBLIC_URL: target.endpoint }) };
-createosCli(["env", "set", "--project", target.project, "--environment", target.environment, ...Object.entries(vars).map(([k, v]) => `${k}=${v}`)]);
-ok(`CreateOS env set: ${Object.keys(vars).join(", ")} (VAULT_STRIPE_KEY withheld)`);
+const synced = await syncCreateosRuntime(target, vars, loadEnv().CREATEOS_PROJECT_API_KEY);
+ok(`CreateOS project and environment configured: ${synced.keys.join(", ")} (VAULT_STRIPE_KEY withheld)`);
 
 createosCli(["deploy", "--project", target.project, "--branch", "main"], true);
 // Make sure the newest deployment is the one on the test environment.

@@ -6,7 +6,8 @@ import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { Sandbox } from "@nodeops-createos/sandbox";
 import { existsSync } from "node:fs";
-import { createos, createosCli, createosTarget, EU, fail, loadEnv, ok, projects, provisioned, warn, wrangler } from "./lib.ts";
+import { createos, createosTarget, EU, fail, loadEnv, ok, projects, provisioned, warn, wrangler } from "./lib.ts";
+import { syncCreateosRuntime } from "./createos-runtime.ts";
 import { syncSecrets, workerSecrets } from "./secrets-sync.ts";
 
 const PLAN = process.env.CREATEOS_PLAN ?? "free"; // free | beginner-monthly | pro-monthly
@@ -109,8 +110,8 @@ if (!createosOnly) wrangler(["secret", "put", "APPROVAL_HMAC_KEY"], hmacKey);
 if (existsSync(".createos.json")) {
   const t = createosTarget();
   const vars = { ...workerSecrets(), APPROVAL_HMAC_KEY: hmacKey, PLAN_BOX_LIMIT: String(limit), ...(t.endpoint && { PUBLIC_URL: t.endpoint }) };
-  createosCli(["env", "set", "--project", t.project, "--environment", t.environment, ...Object.entries(vars).map(([k, v]) => `${k}=${v}`)]);
-  ok(`CreateOS deployment configured: ${Object.keys(vars).join(", ")} (vault key withheld)`);
+  const synced = await syncCreateosRuntime(t, vars, env.CREATEOS_PROJECT_API_KEY);
+  ok(`CreateOS project and environment configured: ${synced.keys.join(", ")} (vault key withheld)`);
 } else if (createosOnly) {
   fail("--createos-only requires an existing CreateOS deployment project");
 }

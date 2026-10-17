@@ -10,7 +10,9 @@
       "!.claude",
       "!.cursor",
       "!worker/embedded.gen.ts",
-      "!build"
+      "!build",
+      "!pricing.html",
+      "!pricing2.html"
     ]
   },
   "linter": {
