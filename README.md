@@ -501,6 +501,6 @@ Before real-money use, remove the deliberate flaw, authenticate customer identit
 
 Keep changes focused, use synthetic fixtures, and run lint, tests, build, and secret scanning. For policy changes, explain the failing case and preserve it as a regression test. Review generated patches before installing them; omit credentials and account data from reports.
 
-**AgentHandshake** is the current name; older history may refer to TwoKey / Two-Key. The supplied logo is stored at [`docs/assets/agent-handshake-logo.png`](docs/assets/agent-handshake-logo.png).
+The **AgentHandshake** logo is stored at [`docs/assets/agent-handshake-logo.png`](docs/assets/agent-handshake-logo.png).
 
 Code is distributed under the [MIT License](LICENSE). Third-party names and marks belong to their respective owners.
