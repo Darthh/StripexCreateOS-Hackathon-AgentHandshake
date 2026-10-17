@@ -106,7 +106,7 @@ test("over the cap needs the third key; only a valid HMAC turns it", async () =>
 
 test("state survives a restart (folded from the audit log)", async () => {
   await (globalThis as any).restart();
-  const h = await (await fetch(`${base}/health`)).json();
+  const h = (await (await fetch(`${base}/health`)).json()) as { voters: string[] };
   assert.deepEqual(h.voters.sort(), ["checker", "maker"]);
   assert.equal((await vote("maker")).status, 409, "the vote ledger was replayed");
   assert.equal(refunds.length, 2);
