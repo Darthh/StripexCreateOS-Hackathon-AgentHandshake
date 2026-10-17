@@ -41,7 +41,12 @@ app.get("/api/readiness", (c) => {
 });
 app.get("/api/state", async (c) => c.json(await lab(c.env).snapshot(!!(await adminIdentity(c)))));
 app.get("/api/live", (c) => lab(c.env).fetch(c.req.raw));
-app.get("/api/me", async (c) => c.json({ admin: !!(await adminIdentity(c)) }));
+// Admins also see which required secrets this deployment is missing (names only, never values).
+const REQUIRED = ["CREATEOS_SANDBOX_API_KEY", "READ_STRIPE_KEY", "MODEL_API_KEY", "DATABASE_URL", "APPROVAL_HMAC_KEY"] as const;
+app.get("/api/me", async (c) => {
+  const admin = !!(await adminIdentity(c));
+  return c.json(admin ? { admin, missing_secrets: REQUIRED.filter((k) => !c.env[k]) } : { admin });
+});
 
 // Cloudflare Access protects /api/admin/*, so with Access this path signs you in and comes back.
 // Without Access, it shows the ADMIN_TOKEN form.
