@@ -81,6 +81,24 @@ export async function curlLocal(box: Sandbox, path: string, body?: unknown) {
   return JSON.parse(r.result.stdout || "null");
 }
 
+// Resume can change a VM's private IP. Read only its token hash from a fixed
+// root command, then bind that existing voter identity to its current address.
+export async function repinVoter(vault: Sandbox, box: Sandbox, voter: "maker" | "checker", ip: string | undefined) {
+  if (!ip) throw new Error(`${voter} has no private IP; refusing an unpinned voter`);
+  const result = await box.runCommand("python3", [
+    "-I",
+    "-c",
+    "import hashlib,os,sys; assert os.environ.get('VOTER') == sys.argv[1]; token=os.environ['VOTE_TOKEN']; assert token; print(hashlib.sha256(token.encode()).hexdigest())",
+    voter,
+  ], { timeoutMs: 30_000 });
+  const sha = result.result.stdout.trim();
+  if (result.result.exit_code !== 0 || result.result.error || !/^[a-f0-9]{64}$/.test(sha)) {
+    throw new Error(`${voter} identity hash could not be verified; voter registration unchanged`);
+  }
+  const reply = await curlLocal(vault, "/admin/voters", { voters: { [voter]: { sha, ip } } });
+  if (reply?.ok !== true) throw new Error(`${voter} IP registration was not accepted by the vault`);
+}
+
 export function view(b: Sandbox, role: string) {
   const d = b.data;
   return {

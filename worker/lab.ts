@@ -6,7 +6,7 @@
 import type { Sandbox } from "@nodeops-createos/sandbox";
 import { DurableObject } from "cloudflare:workers";
 import { type AgentJob, agentTurn, CHECKER_SYSTEM, MAKER_SYSTEM, newJob, PATCHER_SYSTEM, POLICY_V1, REDTEAM_SYSTEM, REDTEAM_TOOLS, VOTE_TOOL } from "./agents.ts";
-import { assertCapacity, client, curlLocal, DENY, type EgressProof, ensureRunning, findBox, LAB_NET, liveBoxes, network, networkIp, proveEgress, SHADOW_NET, view } from "./boxes.ts";
+import { assertCapacity, client, curlLocal, DENY, type EgressProof, ensureRunning, findBox, LAB_NET, liveBoxes, network, networkIp, proveEgress, repinVoter, SHADOW_NET, view } from "./boxes.ts";
 import { audit, db, ensureSchema, redact, type Sql } from "./db.ts";
 import type { Env } from "./index.ts";
 import { lineDiff } from "../shared/diff.ts";
@@ -213,7 +213,7 @@ export class Lab extends DurableObject<Env> {
       if (box.status !== "running") return 3000;
       if (d.sha) {
         d.ipTries = (d.ipTries ?? 0) + 1;
-        if (!(await this.registerVoter("live", d.role as "maker" | "checker", d.sha, box.id, d.net!, d.ipTries >= 10))) return 3000;
+        if (!(await this.registerVoter("live", d.role as "maker" | "checker", d.sha, box.id, d.net!))) return 3000;
       }
       await box.sh(BOX_DIRS);
       if (d.role === "portal") {
@@ -247,33 +247,39 @@ export class Lab extends DurableObject<Env> {
   // other: voters (and the live-lab attacker) may reach only the vault's IP:8080, and the vault
   // allows only api.stripe.com plus exactly those peers. Sandboxes can't resolve each other by
   // name, so the vault is addressed by its private IP. Only rewrites rules that changed.
-  async wireLab(): Promise<string> {
-    const net = await network(this.env, LAB_NET);
+  async wireLab(lab: LabName = "live"): Promise<string> {
+    const net = await network(this.env, lab === "live" ? LAB_NET : SHADOW_NET);
     const members = (await client(this.env).networks.get(net.id)).members ?? [];
-    const ipOf = (name: string) => members.find((m) => m.name === name)?.ip;
+    const boxes = await liveBoxes(this.env);
+    const byName = (name: string) => boxes.find((b) => lab === "shadow" && name !== "attacker" ? b.id === this.mem.shadow[name as "maker" | "checker" | "vault"] : b.name === name);
+    const ipOf = (name: string) => members.find((m) => m.sandbox_id === byName(name)?.id)?.ip;
     const vaultIp = ipOf("vault");
     if (!vaultIp) throw new Error("the vault has no IP on the lab network yet");
-    const boxes = await liveBoxes(this.env);
-    const byName = (n: string) => boxes.find((b) => b.name === n);
-    const peers = ["maker", "checker", ...(this.env.SHADOW_LAB === "true" ? [] : ["attacker"])].filter((n) => byName(n) && ipOf(n));
+    const peers = ["maker", "checker", ...(lab === "live" && this.env.SHADOW_LAB === "true" ? [] : ["attacker"])].filter((n) => byName(n) && ipOf(n));
     const same = (a: string[] | undefined, b: string[]) => (a ?? []).length === b.length && b.every((x) => (a ?? []).includes(x));
     const vaultRules = ["api.stripe.com:443", ...peers.map((n) => ipOf(n)!)];
     const vault = byName("vault");
-    if (vault && !same(vault.data.egress, vaultRules)) await vault.setEgress(vaultRules);
+    if (!vault) throw new Error(`no ${lab} vault box`);
+    if (!same(vault.data.egress, vaultRules)) await vault.setEgress(vaultRules);
     for (const n of peers) if (!same(byName(n)!.data.egress, [`${vaultIp}:8080`])) await byName(n)!.setEgress([`${vaultIp}:8080`]);
+    for (const voter of ["maker", "checker"] as const) {
+      const box = byName(voter);
+      if (box?.status === "running") await repinVoter(vault, box, voter, ipOf(voter));
+    }
+    if (lab === "shadow") this.mem.shadow.vaultUrl = `http://${vaultIp}:8080`;
     return `http://${vaultIp}:8080`;
   }
 
   // Returns false while the voter's network IP is still unknown (caller retries).
-  async registerVoter(lab: LabName, voter: "maker" | "checker", sha: string, sandboxId: string, networkId: string, giveUpOnIp = false) {
+  async registerVoter(lab: LabName, voter: "maker" | "checker", sha: string, sandboxId: string, networkId: string) {
     const vault = await this.boxFor(lab, "vault");
     if (!vault) throw new Error(`no ${lab} vault box; run npm run bootstrap`);
     // The vault also pins the voter's private IP when the network reports it.
     const ip = await networkIp(this.env, networkId, sandboxId).catch(() => undefined);
-    if (!ip && !giveUpOnIp) return false;
+    if (!ip) return false;
     await ensureRunning(vault);
-    await curlLocal(vault, "/admin/voters", { voters: { [voter]: { sha, ...(ip && { ip }) } } });
-    if (!ip) await audit(await this.db(), "warning", { message: `${voter} registered without IP pinning: the network never reported its IP` }, null, voter);
+    const reply = await curlLocal(vault, "/admin/voters", { voters: { [voter]: { sha, ip } } });
+    if (reply?.ok !== true) throw new Error(`${voter} IP registration was not accepted by the vault`);
     return true;
   }
 
@@ -337,10 +343,8 @@ export class Lab extends DurableObject<Env> {
       await b.files.upload("/var/handshake/input/charges.json", exportJson);
     }
     await checker.files.upload("/var/handshake/input/policy.md", this.mem.policy);
-    if (d.lab === "live") {
-      const vaultUrl = await this.wireLab();
-      for (const b of [maker, checker]) await b.files.upload("/opt/handshake/vault_url", vaultUrl);
-    }
+    const vaultUrl = await this.wireLab(d.lab);
+    for (const b of [maker, checker]) await b.files.upload("/opt/handshake/vault_url", vaultUrl);
     const reg = await curlLocal(vault, "/admin/ticket", { ticket: { id: t.id, customer_id: t.customer_id } });
     if (!reg?.ok && reg?.reason !== "ticket already registered") throw new Error(`vault: ${reg?.reason}`);
     await this.setStatus(d.ticketId, "voting");
@@ -737,12 +741,13 @@ export class Lab extends DurableObject<Env> {
     // The fork restarts its processes as they were; make sure the vault service runs.
     const health = await vault.sh("curl -s localhost:8080/health || true");
     if (!health.result.stdout.includes('"ok":true')) await vault.processes.create({ cmd: "node", args: ["/opt/handshake/vault/server.ts"], cwd: "/opt/handshake" });
-    const shas = (await this.ctx.storage.get<Record<string, string>>("shadowTokenSha"))!;
     for (const r of ["maker", "checker"] as const) {
       const f = await client(env).getSandbox(d.ids![r]);
+      if (f.status !== "running") return 3000;
       await f.files.upload("/opt/handshake/vault_url", this.mem.shadow.vaultUrl);
       const ip = await networkIp(env, shadowNet.id, f.id);
-      await curlLocal(vault, "/admin/voters", { voters: { [r]: { sha: shas[r], ...(ip && { ip }) } } });
+      if (!ip) return 3000;
+      await repinVoter(vault, f, r, ip);
     }
     await this.ctx.storage.delete("shadowTokenSha");
     this.emit({ type: "shadow", ready: true });

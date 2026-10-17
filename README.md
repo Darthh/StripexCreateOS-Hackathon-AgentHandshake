@@ -187,6 +187,7 @@ Public snapshots mask email-shaped strings. They remain a public demo workspace,
 | Endpoint | Behavior |
 | --- | --- |
 | `GET /api/health` | `{"ok":true,"service":"agent-handshake"}`; does not check every dependency. |
+| `GET /api/readiness` | 200 when required credential bindings are present; otherwise 503 with missing names only. Does not call external services or reveal values. |
 | `GET /api/state` | Dashboard snapshot; admin identity affects detail and email masking. |
 | `GET /api/live` | WebSocket stream of Lab events. |
 | `GET /api/me` | Whether an accepted admin identity is present. |
@@ -459,7 +460,9 @@ createos projects add --name "AgentHandshake" --unique-name agent-handshake \
 npm run deploy:createos
 ```
 
-Reuse an existing target if available and complete any required GitHub integration access. The helper requires ignored `.createos.json`, sets allowlisted environment values, triggers a build from **pushed GitHub `main`**, and promotes the latest deployment to `handshake-test`. It fetches `origin/main` and warns when local HEAD differs. Commit and push intended changes before deploying; local-only files do not ship. The helper defaults `PLAN_BOX_LIMIT` to `1` unless provided in its environment.
+Reuse an existing target if available and complete any required GitHub integration access. The helper requires ignored `.createos.json`, synchronizes allowlisted runtime values to both project and environment settings, triggers a build from **pushed GitHub `main`**, and promotes the latest deployment to `handshake-test`. It preserves the approval HMAC already installed by bootstrap. It fetches `origin/main` and warns when local HEAD differs. Commit and push intended changes before deploying; local-only files do not ship. The helper defaults `PLAN_BOX_LIMIT` to `5` unless provided in its environment; set it to your account's actual allowance.
+
+After deployment, check `/api/readiness` on the actual application URL. A platform build or promotion success does not prove that the running container has loaded its required bindings. Readiness checks configuration presence; complete a connected test ticket to verify model, sandbox, vault, and Stripe access together.
 
 The Dockerfile installs CA certificates, builds assets, bundles the Worker, and runs `scripts/serve.ts` on `0.0.0.0:8080`. The entry point uses Miniflare/workerd directly and stores local Durable Object state under `/data/miniflare`. Persistence across container replacement requires host storage configuration; a filesystem path alone is not a durable-volume guarantee.
 
