@@ -3,6 +3,7 @@
 import { Hono } from "hono";
 import { accessJwt, requireAdmin, verifyAccess } from "./access.ts";
 import { findBox } from "./boxes.ts";
+import { redact } from "./db.ts";
 
 export { Lab } from "./lab.ts";
 
@@ -43,7 +44,7 @@ app.post("/api/admin/:action", requireAdmin, async (c) => {
   try {
     return c.json({ ok: true, ...(await lab(c.env).action(c.req.param("action") ?? "", body, c.get("admin"))) });
   } catch (err) {
-    return c.json({ ok: false, reason: (err as Error).message }, 400);
+    return c.json({ ok: false, reason: redact((err as Error).message) }, 400);
   }
 });
 // Every other non-GET /api route is refused outright.
@@ -54,6 +55,12 @@ app.get("/try", async (c) => {
   const portal = await findBox(c.env, "portal").catch(() => undefined);
   const url = portal?.data.ingress_url_template?.replace("<port>", "8080");
   return url && portal?.status === "running" ? c.redirect(url, 302) : c.text("The portal box is not up right now.", 503);
+});
+
+app.onError((err, c) => {
+  const message = redact(err.message);
+  console.error(message);
+  return c.json({ ok: false, reason: message }, 500);
 });
 
 export default app;

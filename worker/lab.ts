@@ -7,7 +7,7 @@ import type { Sandbox } from "@nodeops-createos/sandbox";
 import { DurableObject } from "cloudflare:workers";
 import { type AgentJob, agentTurn, CHECKER_SYSTEM, MAKER_SYSTEM, newJob, PATCHER_SYSTEM, POLICY_V1, REDTEAM_SYSTEM, REDTEAM_TOOLS, VOTE_TOOL } from "./agents.ts";
 import { assertCapacity, client, curlLocal, DENY, type EgressProof, ensureRunning, findBox, LAB_NET, liveBoxes, network, networkIp, proveEgress, SHADOW_NET, view } from "./boxes.ts";
-import { audit, db, ensureSchema, type Sql } from "./db.ts";
+import { audit, db, ensureSchema, redact, type Sql } from "./db.ts";
 import type { Env } from "./index.ts";
 import { lineDiff } from "../shared/diff.ts";
 import { chargesExport, unauthorizedRefunds } from "./stripe.ts";
@@ -99,9 +99,9 @@ export class Lab extends DurableObject<Env> {
         if (again !== undefined) this.mem.queue.push({ ...job, at: Date.now() + again });
         this.mem.lastError = undefined;
       } catch (err) {
-        this.mem.lastError = `${job.type}: ${(err as Error).message}`;
+        this.mem.lastError = redact(`${job.type}: ${(err as Error).message}`);
         this.emit({ type: "error", message: this.mem.lastError });
-        await audit(await this.db(), "error", { job: job.type, message: (err as Error).message }, job.data.ticketId ?? null).catch(() => {});
+        await audit(await this.db(), "error", { job: job.type, message: this.mem.lastError }, job.data.ticketId ?? null).catch(() => {});
         await this.onJobFailed(job).catch(() => {});
       }
       this.mem.current = undefined;
@@ -109,7 +109,7 @@ export class Lab extends DurableObject<Env> {
       this.emit({ type: "tick", job: job.type, ticketId: job.data.ticketId });
     } else if (now - ((await this.ctx.storage.get<number>("portalPolled")) ?? 0) >= 2900) {
       await this.ctx.storage.put("portalPolled", now);
-      await this.pollPortal().catch((e) => (this.mem.lastError = `portal: ${e.message}`));
+      await this.pollPortal().catch((e) => (this.mem.lastError = redact(`portal: ${e.message}`)));
     }
     await this.arm();
   }

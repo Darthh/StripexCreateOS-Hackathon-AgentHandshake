@@ -3,6 +3,13 @@
 import { neon } from "@neondatabase/serverless";
 
 export const db = (url: string) => neon(url);
+
+// Driver errors can echo connection strings and keys; scrub before logging or broadcasting.
+export const redact = (s: string) =>
+  s
+    .replace(/postgres(ql)?:\/\/[^\s'"]+/g, "postgres://<redacted>")
+    .replace(/\b(sk|rk)_(test|live)_[A-Za-z0-9]+/g, "$1_$2_<redacted>")
+    .replace(/\bsk-or-[A-Za-z0-9-]+/g, "sk-or-<redacted>");
 export type Sql = ReturnType<typeof db>;
 
 export const SCHEMA = [

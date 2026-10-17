@@ -11,6 +11,7 @@ import { type Charge, DEFAULT_POLICY, type Decision, decide, type Ticket, type V
 const DIR = process.env.VAULT_DIR ?? "/var/lib/vault";
 const LOG = `${DIR}/audit.jsonl`;
 const PORT = Number(process.env.PORT ?? 8080);
+const STRIPE_API = process.env.STRIPE_API ?? "https://api.stripe.com"; // overridden only by the test's fake Stripe
 mkdirSync(DIR, { recursive: true });
 
 // Secrets come from a 0600 file written by bootstrap, not from the sandbox env.
@@ -67,7 +68,7 @@ if (existsSync(LOG)) for (const line of readFileSync(LOG, "utf8").split("\n")) i
 
 // ---- Stripe (fetch only; egress allows api.stripe.com:443 and nothing else) ----
 async function stripe(method: "GET" | "POST", path: string, form?: Record<string, string>, idem?: string) {
-  const res = await fetch(`https://api.stripe.com/v1/${path}`, {
+  const res = await fetch(`${STRIPE_API}/v1/${path}`, {
     method,
     headers: {
       authorization: `Bearer ${STRIPE_KEY}`,

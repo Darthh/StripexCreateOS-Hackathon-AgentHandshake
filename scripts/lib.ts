@@ -20,7 +20,7 @@ export function loadEnv(): Record<string, string> {
     if (!existsSync(f)) continue;
     for (const line of readFileSync(f, "utf8").split(/\r?\n/)) {
       const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-      if (m) env[m[1]] = m[2].replace(/^"(.*)"$/, "$1");
+      if (m) env[m[1]] = m[2].replace(/^(["'])(.*)\1$/, "$2"); // Stripe Projects single-quotes some values
     }
   }
   return env;

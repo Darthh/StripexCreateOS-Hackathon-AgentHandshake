@@ -1,6 +1,6 @@
 // npm run secrets:sync — push the Worker's secrets from the Stripe Projects .env to Cloudflare.
 // Refuses to push the vault's money key: Cloudflare must never hold VAULT_STRIPE_KEY.
-import { fail, loadEnv, ok, projects, wrangler } from "./lib.ts";
+import { fail, loadEnv, ok, projects, warn, wrangler } from "./lib.ts";
 
 // Worker secret name <- .env name
 const MAP: Record<string, string> = {
@@ -17,7 +17,10 @@ export function syncSecrets() {
   const out: Record<string, string> = {};
   for (const [name, from] of Object.entries(MAP)) {
     const v = env[from];
-    if (!v) fail(`${from} missing from .env (needed for Worker secret ${name}). Run npm run bootstrap.`);
+    if (!v) {
+      warn(`${from} not in .env yet: skipping Worker secret ${name} (bootstrap requires it)`);
+      continue;
+    }
     out[name] = v;
   }
   for (const [name, v] of Object.entries(out)) {
