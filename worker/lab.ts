@@ -266,6 +266,9 @@ export class Lab extends DurableObject<Env> {
 
   // ---- tickets ----
   async jobTicket(d: { ticketId: string; lab: LabName; step?: string }) {
+    // Voters share a workspace within each lab. Finish the current ticket before
+    // another ticket can replace its input files or execution evidence.
+    if (this.mem.queue.some((j) => j.data.lab === d.lab && j.data.ticketId !== d.ticketId && (j.type === "agent" || j.type === "finish"))) return 1000;
     const sql = await this.db();
     const [t] = await sql`select * from tickets where id = ${d.ticketId}`;
     if (!t) return;
@@ -328,7 +331,12 @@ export class Lab extends DurableObject<Env> {
       // The vote leaves from inside the box via the fixed script; the token never leaves the VM.
       const v = { ticket_id: d.ticketId, decision: input.decision, charge_id: input.charge_id, amount_cents: input.amount_cents, reason_code: input.reason_code };
       const r = await box.runCommand("python3", ["/opt/handshake/vote.py", JSON.stringify(v)], { timeoutMs: 60_000 });
-      vote = { ...v, rationale: input.rationale, vault: safeJson(r.result.stdout) ?? r.result.stdout.slice(0, 500) };
+      const reply = safeJson(r.result.stdout);
+      if (r.result.exit_code !== 0 || r.result.error || reply?.ok !== true) {
+        const detail = this.scrub(String(reply?.reason || r.result.error || r.result.stderr || r.result.stdout).slice(0, 500));
+        return { content: `Vote completion not confirmed (exit ${r.result.exit_code}): ${detail || "invalid response"}. Check the vault transport before retrying.`, done: false };
+      }
+      vote = { ...v, rationale: input.rationale, vault: reply };
       this.emit({ type: "vote", voter: d.voter, ticketId: d.ticketId, decision: input.decision });
       return { content: `Vault replied: ${r.result.stdout.slice(0, 500)}`, done: true };
     });
@@ -632,7 +640,7 @@ export class Lab extends DurableObject<Env> {
     if (!vault) throw new Error("no vault box");
     await ensureRunning(vault);
     await vault.files.upload("/opt/handshake/shared/decide.ts", p.code);
-    await vault.sh("pkill -f /opt/handshake/vault/server.ts || true");
+    await vault.sh("pkill -f '[/]opt/handshake/vault/server.ts' || true");
     await vault.processes.create({ cmd: "node", args: ["/opt/handshake/vault/server.ts"], cwd: "/opt/handshake" });
     await sql`update patches set status = 'merged' where id = ${d.patchId}`;
     await audit(sql, "patch_merged", { patch: d.patchId, by: d.by }, null, "vault");
@@ -857,7 +865,7 @@ export class Lab extends DurableObject<Env> {
           await ensureRunning(vault);
           // Rotate the vault ledger and restart it clean.
           // Rotate the vault ledger, keeping only voter registrations, and restart it clean.
-          await vault.sh("cd /var/lib/vault && grep '\"kind\":\"voters\"' audit.jsonl > keep.jsonl; mv audit.jsonl audit.$(date +%s).jsonl; mv keep.jsonl audit.jsonl; pkill -f /opt/handshake/vault/server.ts || true");
+          await vault.sh("cd /var/lib/vault && grep '\"kind\":\"voters\"' audit.jsonl > keep.jsonl; mv audit.jsonl audit.$(date +%s).jsonl; mv keep.jsonl audit.jsonl; pkill -f '[/]opt/handshake/vault/server.ts' || true");
           await vault.processes.create({ cmd: "node", args: ["/opt/handshake/vault/server.ts"], cwd: "/opt/handshake" });
         }
         await this.save();

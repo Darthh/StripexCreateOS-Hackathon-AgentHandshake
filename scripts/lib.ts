@@ -52,7 +52,8 @@ export function provisioned(status: any): Set<string> {
 export function createos(env: Record<string, string>) {
   const apiKey = env.CREATEOS_PROJECT_API_KEY;
   if (!apiKey) fail("CREATEOS_PROJECT_API_KEY missing from .env. Run: stripe projects add createos/project");
-  return new CreateosSandboxClient({ apiKey, baseUrl: EU });
+  // Native fetch avoids keeping an HTTP/2 pool alive after one-shot local scripts.
+  return new CreateosSandboxClient({ apiKey, baseUrl: EU, fetch: (input, init) => fetch(input, init) });
 }
 
 export function wrangler(args: string[], input?: string) {

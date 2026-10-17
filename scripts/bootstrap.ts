@@ -7,10 +7,11 @@ import { readFileSync } from "node:fs";
 import type { Sandbox } from "@nodeops-createos/sandbox";
 import { existsSync } from "node:fs";
 import { createos, createosCli, createosTarget, EU, fail, loadEnv, ok, projects, provisioned, warn, wrangler } from "./lib.ts";
-import { syncSecrets } from "./secrets-sync.ts";
+import { syncSecrets, workerSecrets } from "./secrets-sync.ts";
 
 const PLAN = process.env.CREATEOS_PLAN ?? "free"; // free | beginner-monthly | pro-monthly
 const LAB_NET = "handshake-lab";
+const createosOnly = process.argv.includes("--createos-only");
 
 // 1. Stripe Projects: every service the stack needs.
 const init = projects(["status"]);
@@ -81,7 +82,7 @@ await vault.files.upload("/opt/handshake/shared/decide.ts", readFileSync("shared
 await vault.files.upload("/opt/handshake/vault/server.ts", readFileSync("vault/server.ts"));
 await vault.files.upload("/var/lib/vault/secrets.env", `VAULT_STRIPE_KEY=${env.VAULT_STRIPE_KEY}\nAPPROVAL_HMAC_KEY=${hmacKey}\n`);
 await vault.sh("chmod 600 /var/lib/vault/secrets.env");
-await vault.sh("pkill -f /opt/handshake/vault/server.ts || true");
+await vault.sh("pkill -f '[/]opt/handshake/vault/server.ts' || true");
 await vault.processes.create({ cmd: "node", args: ["/opt/handshake/vault/server.ts"], cwd: "/opt/handshake" });
 let health = "";
 for (let i = 0; i < 20 && !health.includes('"ok":true'); i++) {
@@ -103,12 +104,16 @@ if (proof.stripe !== "401") fail(`vault cannot reach api.stripe.com (got ${proof
 ok("egress proven: example.com blocked, api.stripe.com reachable (401 without a key)");
 
 // 7. Worker secrets. APPROVAL_HMAC_KEY lives only in the Worker and the vault.
-wrangler(["secret", "put", "APPROVAL_HMAC_KEY"], hmacKey);
+if (!createosOnly) wrangler(["secret", "put", "APPROVAL_HMAC_KEY"], hmacKey);
 // The CreateOS Deploy copy of the Worker signs approvals for the same vault.
 if (existsSync(".createos.json")) {
   const t = createosTarget();
-  createosCli(["env", "set", "--project", t.project, "--environment", t.environment, `APPROVAL_HMAC_KEY=${hmacKey}`]);
+  const vars = { ...workerSecrets(), APPROVAL_HMAC_KEY: hmacKey, PLAN_BOX_LIMIT: String(limit), ...(t.endpoint && { PUBLIC_URL: t.endpoint }) };
+  createosCli(["env", "set", "--project", t.project, "--environment", t.environment, ...Object.entries(vars).map(([k, v]) => `${k}=${v}`)]);
+  ok(`CreateOS deployment configured: ${Object.keys(vars).join(", ")} (vault key withheld)`);
+} else if (createosOnly) {
+  fail("--createos-only requires an existing CreateOS deployment project");
 }
 ok("APPROVAL_HMAC_KEY pushed to the Worker(s) and the vault; not written to disk");
-syncSecrets();
+if (!createosOnly) syncSecrets();
 console.log("\nBootstrap complete. Next: npm run seed, then npm run deploy.\n");

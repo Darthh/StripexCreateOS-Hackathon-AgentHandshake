@@ -159,6 +159,14 @@ try {
   writeFileSync("/opt/handshake/vault_url", vaultBase);
   const tokens = { maker: "fixture-maker-token", checker: "fixture-checker-token" };
   await post(vaultBase, "/admin/voters", { voters: Object.fromEntries(Object.entries(tokens).map(([role, token]) => [role, { sha: createHash("sha256").update(token).digest("hex") }])) });
+  await check("fixed vote transport reports rejected credentials as a failed command", async () => {
+    let rejection: any;
+    try {
+      await exec("python3", ["/opt/handshake/vote.py", JSON.stringify({ ticket_id: "invalid_token_probe", decision: "refund" })], { env: { ...process.env, VOTER: "maker", VOTE_TOKEN: "invalid-fixture-token" } });
+    } catch (e) { rejection = e; }
+    assert.equal(rejection?.code, 1);
+    assert.equal(JSON.parse(rejection.stdout).ok, false);
+  });
   let activeRole: "maker" | "checker" = "maker";
   const box = {
     files: { upload: async (path: string, value: string) => { writeFileSync(path, value); chmodSync(path, 0o644); } },

@@ -336,6 +336,8 @@ npx wrangler login
 npm run bootstrap
 ```
 
+For an existing CreateOS Deploy project without a Cloudflare deployment, use `npm run bootstrap -- --createos-only`. This configures the vault and CreateOS deployment secrets while skipping Cloudflare authentication. It withholds the vault key and full Stripe test secret from the deployment.
+
 The script requests missing free plans/resources for CreateOS, Neon, Resend, and OpenRouter. It also attempts a dedicated Stripe sandbox, with a local test-key fallback. It pulls credentials, verifies the CreateOS key against EU, creates/reuses `handshake-lab` and the vault, starts the vault, probes egress, and synchronizes secrets.
 
 Successful bootstrap requires a healthy vault, blocked-destination proof, and Stripe reachability. On Free, the vault occupies the single slot; no capacity remains for separate voters.
@@ -407,7 +409,7 @@ cos offload -s s-1vcpu-1gb -r devbox:1 -p npm -p python-uv \
   . 'npm ci --ignore-scripts --no-audit --no-fund && npm run test:sandbox'
 ```
 
-This runs ten checks: the production container entry point, SPA routes, admin access and cross-origin rejection, protected sessions, live WebSockets, portal validation/rate limits, production Python/pandas provisioning, unprivileged execution with scrubbed secrets, agent repair and voting, and signed human approval. JSON results and maker/checker transcripts are returned under `artifacts/sandbox-checks/`.
+This runs eleven checks: the production container entry point, SPA routes, admin access and cross-origin rejection, protected sessions, live WebSockets, portal validation/rate limits, production Python/pandas provisioning, unprivileged execution with scrubbed secrets, rejected-vote transport errors, agent repair and voting, and signed human approval. JSON results and maker/checker transcripts are returned under `artifacts/sandbox-checks/`.
 
 The agent loop uses a deterministic model fixture and the real Python runner, vote transport, and vault against local fake Stripe. Maker and checker run sequentially in this single integration sandbox. It does not establish a real model response, Stripe test-account refund, or separate-VM network isolation. `npm run test:sandbox` expects disposable Linux running as root and must not be run directly on a workstation.
 

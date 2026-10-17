@@ -24,3 +24,7 @@ try:
     print(urllib.request.urlopen(req, timeout=30).read().decode())
 except urllib.error.HTTPError as e:
     print(e.read().decode())
+    sys.exit(1)
+except urllib.error.URLError as e:
+    print(json.dumps({"ok": False, "reason": f"vault unreachable: {e.reason}"}))
+    sys.exit(1)
