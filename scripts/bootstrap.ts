@@ -5,7 +5,8 @@
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import type { Sandbox } from "@nodeops-createos/sandbox";
-import { createos, EU, fail, loadEnv, ok, PLAN_LIMITS, projects, provisioned, warn, wrangler } from "./lib.ts";
+import { existsSync } from "node:fs";
+import { createos, createosCli, createosTarget, EU, fail, loadEnv, ok, PLAN_LIMITS, projects, provisioned, warn, wrangler } from "./lib.ts";
 import { syncSecrets } from "./secrets-sync.ts";
 
 const PLAN = process.env.CREATEOS_PLAN ?? "free"; // free | beginner-monthly | pro-monthly
@@ -102,6 +103,11 @@ ok("egress proven: example.com blocked, api.stripe.com reachable (401 without a 
 
 // 7. Worker secrets. APPROVAL_HMAC_KEY lives only in the Worker and the vault.
 wrangler(["secret", "put", "APPROVAL_HMAC_KEY"], hmacKey);
-ok("APPROVAL_HMAC_KEY pushed to the Worker (and the vault); not written to disk");
+// The CreateOS Deploy copy of the Worker signs approvals for the same vault.
+if (existsSync(".createos.json")) {
+  const t = createosTarget();
+  createosCli(["env", "set", "--project", t.project, "--environment", t.environment, `APPROVAL_HMAC_KEY=${hmacKey}`]);
+}
+ok("APPROVAL_HMAC_KEY pushed to the Worker(s) and the vault; not written to disk");
 syncSecrets();
 console.log("\nBootstrap complete. Next: npm run seed, then npm run deploy.\n");

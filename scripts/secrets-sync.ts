@@ -1,5 +1,6 @@
 // npm run secrets:sync — push the Worker's secrets from the Stripe Projects .env to Cloudflare.
-// Refuses to push the vault's money key: Cloudflare must never hold VAULT_STRIPE_KEY.
+// workerSecrets() is shared with deploy:createos. It refuses the vault's money key: neither
+// Cloudflare nor CreateOS Deploy may ever hold VAULT_STRIPE_KEY.
 import { randomBytes } from "node:crypto";
 import { appendFileSync } from "node:fs";
 import { fail, loadEnv, ok, projects, warn, wrangler } from "./lib.ts";
@@ -14,7 +15,7 @@ const MAP: Record<string, string> = {
   RESEND_API_KEY: "RESEND_API_KEY",
 };
 
-export function syncSecrets() {
+export function workerSecrets(): Record<string, string> {
   const env = loadEnv();
   if (!env.ADMIN_TOKEN) {
     env.ADMIN_TOKEN = randomBytes(32).toString("hex");
@@ -43,6 +44,11 @@ ADMIN_TOKEN=${env.ADMIN_TOKEN}
   out.PROJECTS_STATUS = JSON.stringify(
     [...(status?.services ?? []), ...(status?.plans ?? [])].map((s: any) => ({ provider: s.provider, service: s.service_id, pricing: s.pricing, status: s.status })),
   );
+  return out;
+}
+
+export function syncSecrets() {
+  const out = workerSecrets();
   wrangler(["secret", "bulk"], JSON.stringify(out));
   ok(`Worker secrets pushed: ${Object.keys(out).join(", ")} (VAULT_STRIPE_KEY withheld)`);
 }

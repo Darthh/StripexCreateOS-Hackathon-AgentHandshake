@@ -18,7 +18,8 @@
     "test": "node --test \"shared/**/*.test.ts\" \"worker/**/*.test.ts\" \"vault/**/*.test.ts\"",
     "scan": "gitleaks git --redact --no-banner",
     "prepare": "git config core.hooksPath .githooks || true",
-    "teardown": "node scripts/teardown.ts"
+    "teardown": "node scripts/teardown.ts",
+    "deploy:createos": "node scripts/deploy-createos.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

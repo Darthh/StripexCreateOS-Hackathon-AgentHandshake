@@ -50,6 +50,15 @@ export class Lab extends DurableObject<Env> {
     });
   }
 
+  // Pattern-based redaction plus the exact value of every secret this Worker holds.
+  scrub(message: string) {
+    let s = redact(message);
+    for (const v of [this.env.CREATEOS_SANDBOX_API_KEY, this.env.READ_STRIPE_KEY, this.env.MODEL_API_KEY, this.env.DATABASE_URL, this.env.APPROVAL_HMAC_KEY, this.env.RESEND_API_KEY, this.env.ADMIN_TOKEN]) {
+      if (v) s = s.replaceAll(v, "<redacted>");
+    }
+    return s;
+  }
+
   async save() {
     await this.ctx.storage.put("mem", this.mem);
   }
@@ -110,8 +119,8 @@ export class Lab extends DurableObject<Env> {
           await this.arm();
           return;
         }
-        this.mem.lastError = redact(`${job.type}: ${(err as Error).message}`);
-        this.emit({ type: "error", message: this.mem.lastError });
+        this.mem.lastError = this.scrub(`${job.type}: ${(err as Error).message}`);
+        this.emit({ type: "error", message: `${job.type} failed (details on the dashboard for admins)` });
         await audit(await this.db(), "error", { job: job.type, message: this.mem.lastError }, job.data.ticketId ?? null).catch(() => {});
         await this.onJobFailed(job).catch(() => {});
       }
@@ -120,7 +129,7 @@ export class Lab extends DurableObject<Env> {
       this.emit({ type: "tick", job: job.type, ticketId: job.data.ticketId });
     } else if (now - ((await this.ctx.storage.get<number>("portalPolled")) ?? 0) >= 2900) {
       await this.ctx.storage.put("portalPolled", now);
-      await this.pollPortal().catch((e) => (this.mem.lastError = redact(`portal: ${e.message}`)));
+      await this.pollPortal().catch((e) => (this.mem.lastError = this.scrub(`portal: ${e.message}`)));
     }
     await this.arm();
   }
@@ -706,7 +715,7 @@ export class Lab extends DurableObject<Env> {
     let boxError: string | null = null;
     const [boxes, tickets, auditRows, attacks, patches, forks, scenarios, money] = await Promise.all([
       liveBoxes(this.env).catch((e) => {
-        boxError = redact(`CreateOS: ${e.message}`); // surface it instead of showing "no boxes"
+        boxError = this.scrub(`CreateOS: ${e.message}`); // surface it instead of showing "no boxes"
         return [] as Sandbox[];
       }),
       sql`select id, lab, source, customer_id, customer_email, charge_id, amount_cents, reason_code, free_text, status, keys, decision, maker, checker, refund_id, created_at, updated_at from tickets order by created_at desc limit 100`,
@@ -735,7 +744,7 @@ export class Lab extends DurableObject<Env> {
       portal_url: portal?.data.ingress_url_template?.replace("<port>", "8080") ?? null,
       plan_limit: Number(this.env.PLAN_BOX_LIMIT),
       projects: safeJson(this.env.PROJECTS_STATUS ?? "[]") ?? [],
-      lab: { shadow: this.env.SHADOW_LAB === "true", model: this.env.MODEL, queue: this.mem.queue.map((j) => ({ type: j.type, at: j.at, ticketId: j.data.ticketId ?? null })), current: this.mem.current ?? null, error: this.mem.lastError ?? boxError },
+      lab: { shadow: this.env.SHADOW_LAB === "true", model: this.env.MODEL, queue: this.mem.queue.map((j) => ({ type: j.type, at: j.at, ticketId: j.data.ticketId ?? null })), current: this.mem.current ?? null, error: admin ? (this.mem.lastError ?? boxError) : this.mem.lastError || boxError ? "The orchestrator hit an error (details are admin-only)." : null },
       policy: this.mem.policy,
     };
     return admin ? snap : scrub(snap);

@@ -59,4 +59,25 @@ export function wrangler(args: string[], input?: string) {
   return execFileSync("npx", ["wrangler", ...args], { encoding: "utf8", shell: win, input, stdio: [input ? "pipe" : "ignore", "pipe", "pipe"] });
 }
 
+// The createos CLI is a native binary: run it without a shell, so values containing & or %
+// (connection strings) are passed verbatim instead of being parsed by cmd.exe.
+export function createosCli(args: string[], inherit = false) {
+  return execFileSync("createos", args, { encoding: "utf8", stdio: inherit ? "inherit" : ["ignore", "pipe", "pipe"] }) ?? "";
+}
+
+// The CreateOS Deploy project (.createos.json, written by createos projects add/init) and its
+// test environment, created on first use.
+export function createosTarget() {
+  if (!existsSync(".createos.json")) fail("no .createos.json: run createos projects add --type upload --runtime dockerfile --port 8080 (see README)");
+  const project: string = JSON.parse(readFileSync(".createos.json", "utf8")).projectId;
+  const list = () => JSON.parse(createosCli(["-o", "json", "environments", "list", "--project", project]) || "[]") as { id: string; uniqueName: string; extra?: { endpoint?: string } }[];
+  let env = list().find((e) => e.uniqueName === "twokey-test");
+  if (!env) {
+    createosCli(["environments", "create", "--project", project, "--name", "Test", "--unique-name", "twokey-test", "--auto-promote"]);
+    env = list().find((e) => e.uniqueName === "twokey-test");
+  }
+  if (!env) fail("could not create the CreateOS environment twokey-test");
+  return { project, environment: env.id, endpoint: env.extra?.endpoint || "" };
+}
+
 export const PLAN_LIMITS: Record<string, number> = { free: 1, "beginner-monthly": 5, "pro-monthly": 20, "enterprise-monthly": 30 };
