@@ -737,6 +737,8 @@ export class Lab extends DurableObject<Env> {
     ]);
     const portal = boxes.find((b) => b.name === "portal");
     this.mem.portalUp = !!portal;
+    // A fresh Durable Object (redeploy, restart) has no alarm yet: start polling the portal.
+    if (portal && (await this.ctx.storage.getAlarm()) === null) await this.arm();
     const snap = {
       boxes: boxes.map((b) => {
         const role = roleOf(b);
