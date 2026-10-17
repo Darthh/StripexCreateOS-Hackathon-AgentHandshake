@@ -25,5 +25,8 @@ try {
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }
+// Upload deploys don't auto-promote: put the newest deployment on the test environment.
+const [latest] = JSON.parse(createosCli(["-o", "json", "deployments", "list", "--project", target.project])) as { id: string; createdAt: string }[];
+createosCli(["deployments", "promote", "--project", target.project, "--deployment", latest.id, "--environment", target.environment]);
 const { endpoint } = createosTarget();
 ok(`deployed. Test environment: ${endpoint || "(endpoint appears once the deployment is promoted)"}`);

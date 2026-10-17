@@ -747,7 +747,12 @@ export class Lab extends DurableObject<Env> {
       lab: { shadow: this.env.SHADOW_LAB === "true", model: this.env.MODEL, queue: this.mem.queue.map((j) => ({ type: j.type, at: j.at, ticketId: j.data.ticketId ?? null })), current: this.mem.current ?? null, error: admin ? (this.mem.lastError ?? boxError) : this.mem.lastError || boxError ? "The orchestrator hit an error (details are admin-only)." : null },
       policy: this.mem.policy,
     };
-    return admin ? snap : scrub(snap);
+    if (admin) return snap;
+    // Public view: error details (audit rows, ticket reasons) are admin-only, like lab.error.
+    const generic = "orchestrator error (details are admin-only)";
+    snap.audit = snap.audit.map((a) => (a.kind === "error" || a.kind === "warning" ? { ...a, data: { ...a.data, message: generic } } : a));
+    snap.tickets = snap.tickets.map((t) => (String(t.decision?.reason ?? "").startsWith("orchestrator error") ? { ...t, decision: { ...t.decision, reason: generic } } : t));
+    return scrub(snap);
   }
 
   // ---- admin actions (the Worker has already checked Cloudflare Access) ----

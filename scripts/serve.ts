@@ -1,26 +1,36 @@
-// Container entry for CreateOS Deploy: run the same Worker (Durable Object, alarms, WebSockets,
-// static assets) in workerd via `wrangler dev`. CreateOS injects the env vars; secrets go into a
-// 0600 .dev.vars so wrangler prints them as "(hidden)" instead of logging their values.
-import { spawn } from "node:child_process";
-import { writeFileSync } from "node:fs";
+// Container entry for CreateOS Deploy: the same Worker (Durable Object, alarms, WebSockets, static
+// assets) in workerd via Miniflare, the engine behind `wrangler dev`. No dev server, so no file
+// watchers: the shared host's inotify limit made `wrangler dev` crash-loop with EMFILE.
+// The Dockerfile pre-bundles the Worker to build/index.js; wrangler.jsonc stays the single source
+// for vars, compatibility settings and asset routing. Secrets go straight into memory, never a file.
+import { convertV4MiniflareOptions, Miniflare } from "miniflare";
+import { unstable_readConfig } from "wrangler";
 
 const SECRETS = ["CREATEOS_SANDBOX_API_KEY", "READ_STRIPE_KEY", "MODEL_API_KEY", "DATABASE_URL", "APPROVAL_HMAC_KEY", "RESEND_API_KEY", "ADMIN_TOKEN", "ADMIN_EMAIL", "PROJECTS_STATUS"];
-const VARS = ["PUBLIC_URL", "PLAN_BOX_LIMIT", "SHADOW_LAB", "MODEL"];
+const OVERRIDABLE_VARS = ["PUBLIC_URL", "PLAN_BOX_LIMIT", "SHADOW_LAB", "MODEL"];
 
-const lines = SECRETS.filter((k) => process.env[k]).map((k) => {
-  const v = process.env[k]!;
-  if (/['\n]/.test(v)) throw new Error(`${k} contains a quote or newline; cannot write it to .dev.vars safely`);
-  return `${k}='${v}'`; // single quotes: dotenv takes the value literally
-});
-writeFileSync(".dev.vars", `${lines.join("\n")}\n`, { mode: 0o600 });
-const vars = VARS.filter((k) => process.env[k]).flatMap((k) => ["--var", `${k}:${process.env[k]}`]);
+const cfg = unstable_readConfig({ config: "wrangler.jsonc" });
+const fromEnv = (keys: string[]) => Object.fromEntries(keys.filter((k) => process.env[k]).map((k) => [k, process.env[k]!]));
+const runFirst = cfg.assets?.run_worker_first;
 
-// The Dockerfile pre-bundles the Worker (wrangler deploy --dry-run --outdir build). Serving that one
-// file with --no-bundle keeps wrangler from watching every module in node_modules, which exhausts
-// the container's inotify limit (EMFILE).
-const child = spawn(process.execPath, ["node_modules/wrangler/bin/wrangler.js", "dev", "build/index.js", "--no-bundle", "--ip", "0.0.0.0", "--port", process.env.PORT ?? "8080", "--persist-to", process.env.PERSIST_TO ?? "/data/wrangler", ...vars], {
-  stdio: "inherit",
-  env: { ...process.env, CI: "true", WRANGLER_SEND_METRICS: "false" },
+// Miniflare 5 (beta) has a new options schema; the v4 shape is stable and converts losslessly.
+const options = convertV4MiniflareOptions({
+  host: "0.0.0.0",
+  port: Number(process.env.PORT ?? 8080),
+  name: cfg.name,
+  modules: true,
+  scriptPath: "build/index.js",
+  compatibilityDate: cfg.compatibility_date,
+  compatibilityFlags: cfg.compatibility_flags,
+  durableObjects: { LAB: "Lab" },
+  bindings: { ...(cfg.vars as Record<string, string>), ...fromEnv(OVERRIDABLE_VARS), ...fromEnv(SECRETS) },
+  assets: {
+    directory: "dist",
+    binding: "ASSETS",
+    routerConfig: { has_user_worker: true, ...(Array.isArray(runFirst) ? { static_routing: { user_worker: runFirst } } : { invoke_user_worker_ahead_of_assets: runFirst === true }) },
+    assetConfig: { not_found_handling: cfg.assets?.not_found_handling ?? "single-page-application", has_static_routing: Array.isArray(runFirst) },
+  },
 });
-child.on("exit", (code) => process.exit(code ?? 1));
-for (const sig of ["SIGTERM", "SIGINT"] as const) process.on(sig, () => child.kill(sig));
+const mf = new Miniflare({ ...options, resourcePersistencePath: process.env.PERSIST_TO ?? "/data/miniflare" }); // Durable Object state
+console.log(`Two-Key listening on ${await mf.ready}`);
+for (const sig of ["SIGTERM", "SIGINT"] as const) process.on(sig, () => mf.dispose().finally(() => process.exit(0)));
