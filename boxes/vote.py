@@ -16,9 +16,12 @@ body = {
     "reason_code": vote.get("reason_code", ""),
     "evidence_hash": h.hexdigest(),
 }
-url_file = "/opt/handshake/vault_url"  # written by the orchestrator (forks can't be renamed)
-vault_url = open(url_file).read().strip() if os.path.exists(url_file) else "http://vault.fc.local:8080"
-req = urllib.request.Request(vault_url + "/vote",
+url_file = "/opt/handshake/vault_url"  # the vault's private IP, written by the orchestrator (no DNS between boxes)
+vault_url = open(url_file).read().strip() if os.path.exists(url_file) else ""
+if not vault_url:
+    print(json.dumps({"ok": False, "reason": "no vault URL: the orchestrator has not wired this box yet"}))
+    sys.exit(1)
+req =urllib.request.Request(vault_url + "/vote",
                              data=json.dumps(body).encode(), headers={"content-type": "application/json"})
 try:
     print(urllib.request.urlopen(req, timeout=30).read().decode())
