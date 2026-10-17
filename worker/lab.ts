@@ -360,6 +360,9 @@ export class Lab extends DurableObject<Env> {
     const sql = await this.db();
     const box = await this.boxFor(d.lab, d.voter);
     if (!box) throw new Error(`${d.voter} box missing`);
+    // Another job (evidence fork, end-of-ticket sleep) can pause a shared voter between turns.
+    if (box.status === "paused") await box.resume();
+    if (["paused", "pausing", "resuming"].includes(box.status)) return 3000;
     let vote: any = null;
     const final = await agentTurn(this.env, box, d.job, d.voter === "maker" ? MAKER_SYSTEM : CHECKER_SYSTEM, [VOTE_TOOL], async (_name, input) => {
       // The vote leaves from inside the box via the fixed script; the token never leaves the VM.
