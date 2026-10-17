@@ -42,7 +42,8 @@ export async function agentTurn(
   finalTools: Tool[],
   onFinal: (name: string, input: any) => Promise<{ content: string; done: boolean }>,
 ): Promise<{ name: string; input: any; content: string } | null> {
-  const ai = new Anthropic({ apiKey: env.MODEL_API_KEY, baseURL: env.MODEL_BASE_URL });
+  // One SDK retry only: each retry is a subrequest, and the job queue backs off on 429 itself.
+  const ai = new Anthropic({ apiKey: env.MODEL_API_KEY, baseURL: env.MODEL_BASE_URL, maxRetries: 1 });
   const stamp = () => new Date().toISOString();
   job.turn++;
   const res = await ai.messages.create({ model: env.MODEL, max_tokens: 4096, system, tools: [RUN_PYTHON, ...finalTools], messages: job.messages });

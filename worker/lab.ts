@@ -99,6 +99,17 @@ export class Lab extends DurableObject<Env> {
         if (again !== undefined) this.mem.queue.push({ ...job, at: Date.now() + again });
         this.mem.lastError = undefined;
       } catch (err) {
+        // Free models rate-limit: back off and retry the same step instead of failing the ticket.
+        const status = (err as { status?: number }).status;
+        job.data.rateLimited = (job.data.rateLimited ?? 0) + 1;
+        if (status === 429 && job.data.rateLimited <= 5) {
+          this.mem.queue.push({ ...job, at: Date.now() + 15_000 * job.data.rateLimited });
+          this.emit({ type: "rate_limited", job: job.type, retryInS: 15 * job.data.rateLimited });
+          this.mem.current = undefined;
+          await this.save();
+          await this.arm();
+          return;
+        }
         this.mem.lastError = redact(`${job.type}: ${(err as Error).message}`);
         this.emit({ type: "error", message: this.mem.lastError });
         await audit(await this.db(), "error", { job: job.type, message: this.mem.lastError }, job.data.ticketId ?? null).catch(() => {});
@@ -493,7 +504,7 @@ export class Lab extends DurableObject<Env> {
     if (d.step === "write") {
       const [atk] = await sql`select * from attacks where id = ${d.attackId}`;
       const current = await this.liveDecideSource();
-      const ai = new Anthropic({ apiKey: this.env.MODEL_API_KEY, baseURL: this.env.MODEL_BASE_URL });
+      const ai = new Anthropic({ apiKey: this.env.MODEL_API_KEY, baseURL: this.env.MODEL_BASE_URL, maxRetries: 1 });
       const res = await ai.messages.create({
         model: this.env.MODEL,
         max_tokens: 8000,
