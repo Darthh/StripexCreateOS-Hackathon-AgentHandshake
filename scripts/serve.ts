@@ -34,4 +34,6 @@ const options = convertV4MiniflareOptions({
 });
 const mf = new Miniflare({ ...options, log: new Log(LogLevel.INFO), resourcePersistencePath: process.env.PERSIST_TO ?? "/data/miniflare" }); // Durable Object state; log forwards console.* to stdout
 console.log(`Agent Handshake listening on ${await mf.ready}`);
+// Names only, never values: makes a missing platform env var obvious in the deploy logs.
+console.log(`secrets present: ${Object.keys(fromEnv(SECRETS)).join(", ") || "none"}; missing: ${SECRETS.filter((k) => !process.env[k]).join(", ") || "none"}`);
 for (const sig of ["SIGTERM", "SIGINT"] as const) process.on(sig, () => mf.dispose().finally(() => process.exit(0)));
