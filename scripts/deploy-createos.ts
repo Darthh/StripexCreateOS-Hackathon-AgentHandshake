@@ -1,7 +1,7 @@
 // npm run deploy:createos — run the same Worker on CreateOS Deploy (test environment).
 // The CreateOS project is imported from GitHub (VCS), so it builds what is pushed to main: only
-// committed, pushed files ever ship (.env, .env.local and .projects are gitignored and pre-push
-// checked). Secrets come from the same builder as secrets:sync, which refuses the money key.
+// committed, pushed files ever ship (credential files are gitignored and pre-push checked;
+// .projects/state.json is public stack metadata). Secrets use the secrets:sync builder, which refuses the money key.
 import { execFileSync } from "node:child_process";
 import { createosCli, createosTarget, loadEnv, ok, warn } from "./lib.ts";
 import { syncCreateosRuntime } from "./createos-runtime.ts";

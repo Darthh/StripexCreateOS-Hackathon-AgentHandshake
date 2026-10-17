@@ -1,6 +1,7 @@
 #!/bin/sh
-# 1. No secret files may ever be tracked (the Stripe Projects CLI rewrites .gitignore).
-tracked=$(git ls-files | grep -E '(^|/)\.env($|\.)|^\.projects/|(^|/)\.dev\.vars' | grep -v '\.env\.example$')
+# 1. Only Stripe's public stack manifest may be tracked under .projects/.
+# Credential files remain forbidden even if the CLI rewrites .gitignore.
+tracked=$(git ls-files | grep -E '(^|/)\.env($|\.)|(^|/)\.projects/|(^|/)\.dev\.vars' | grep -v -E '(^|/)\.env\.example$|^\.projects/state\.json$')
 if [ -n "$tracked" ]; then echo "pre-push: refusing, secret files are tracked:"; echo "$tracked"; exit 1; fi
 # 2. No secret in any commit being pushed.
 command -v gitleaks >/dev/null || { echo "pre-push: install gitleaks (https://github.com/gitleaks/gitleaks)"; exit 1; }

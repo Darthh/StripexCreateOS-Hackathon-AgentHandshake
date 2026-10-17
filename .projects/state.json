@@ -1,0 +1,67 @@
+{
+  "version": 2,
+  "providers": {
+    "createos": {
+      "name": "createos"
+    },
+    "neon": {
+      "name": "Neon"
+    },
+    "openrouter": {
+      "name": "OpenRouter"
+    },
+    "resend": {
+      "name": "Resend"
+    }
+  },
+  "resources": {
+    "createos-plan": {
+      "livemode": true,
+      "name": "createos-plan",
+      "providerName": "createos",
+      "serviceId": "free"
+    },
+    "createos-project": {
+      "livemode": true,
+      "name": "createos-project",
+      "providerName": "createos",
+      "serviceId": "project"
+    },
+    "neon-plan": {
+      "livemode": true,
+      "name": "neon-plan",
+      "providerName": "Neon",
+      "serviceId": "free"
+    },
+    "neon-postgres": {
+      "livemode": true,
+      "name": "neon-postgres",
+      "providerName": "Neon",
+      "serviceId": "postgres"
+    },
+    "openrouter-api": {
+      "livemode": true,
+      "name": "openrouter-api",
+      "providerName": "OpenRouter",
+      "serviceId": "api"
+    },
+    "openrouter-plan": {
+      "livemode": true,
+      "name": "openrouter-plan",
+      "providerName": "OpenRouter",
+      "serviceId": "free"
+    },
+    "resend-email": {
+      "livemode": true,
+      "name": "resend-email",
+      "providerName": "Resend",
+      "serviceId": "email"
+    },
+    "resend-plan": {
+      "livemode": true,
+      "name": "resend-plan",
+      "providerName": "Resend",
+      "serviceId": "free"
+    }
+  }
+}
