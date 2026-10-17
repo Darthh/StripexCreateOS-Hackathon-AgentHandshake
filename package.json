@@ -16,6 +16,7 @@
     "deploy": "npm run build && wrangler deploy",
     "lint": "node scripts/embed.ts && biome lint . && tsc --noEmit",
     "test": "node --test \"shared/**/*.test.ts\" \"worker/**/*.test.ts\" \"vault/**/*.test.ts\"",
+    "test:sandbox": "npm run build && wrangler deploy --dry-run --outdir build && node scripts/sandbox-checks.ts",
     "scan": "gitleaks git --redact --no-banner",
     "prepare": "git config core.hooksPath .githooks || true",
     "teardown": "node scripts/teardown.ts",

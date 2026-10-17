@@ -13,6 +13,7 @@ import { lineDiff } from "../shared/diff.ts";
 import { chargesExport, unauthorizedRefunds } from "./stripe.ts";
 import Anthropic from "@anthropic-ai/sdk";
 import { PORTAL_TS, RUN_PY, SUITE_TS, VOTE_PY } from "./embedded.gen.ts";
+import { AGENT_PYTHON_SETUP } from "./python.ts";
 
 type LabName = "live" | "shadow";
 type Job = { id: string; type: string; at: number; data: any };
@@ -229,7 +230,8 @@ export class Lab extends DurableObject<Env> {
     }
     if (d.step === "pip") {
       // pandas comes from PyPI while egress allows only PyPI; then the box is sealed.
-      await box.sh("python3 -c 'import pandas' 2>/dev/null || python3 -m pip install -q --break-system-packages pandas", { timeoutMs: 300_000 });
+      const setup = await box.sh(AGENT_PYTHON_SETUP, { timeoutMs: 300_000 });
+      if (setup.result.exit_code !== 0) throw new Error(`agent Python setup failed: ${setup.result.stderr || setup.result.stdout}`);
       await box.setEgress(DENY);
       d.step = "locked";
       return 100;

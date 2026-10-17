@@ -275,7 +275,7 @@ Keep `.env`, `.env.local`, `.dev.vars`, `.projects/`, and `.createos.json` untra
 | `MODEL_BASE_URL` | `https://openrouter.ai/api`. |
 | `MODEL` | `nvidia/nemotron-3-super-120b-a12b:free`; availability/rates/tool support depend on provider. |
 | `SHADOW_LAB` | `false`; attacks use the live **test-mode** lab. |
-| `PLAN_BOX_LIMIT` | `1`; application guard, not a provider subscription change. |
+| `PLAN_BOX_LIMIT` | `5`; application guard, not a provider subscription change. Set it to your verified account capacity. |
 | `PUBLIC_URL` | `https://lunaterminal.com`; change to your actual deployment origin. |
 | `PROJECTS_STATUS` | Non-secret provisioning snapshot used by Proof. |
 | `CREATEOS_PLAN` | Bootstrap setting; defaults to `free`. Other values can trigger paid provisioning. |
@@ -397,6 +397,28 @@ cos offload -s s-1vcpu-1gb -r devbox:1 -p npm \
 On **Windows Git Bash**, prefix `cos` with `MSYS2_ARG_CONV_EXCL=/work` to preserve remote paths through the native Windows CLI. Run `cos auth` first. The one-shot driver normally destroys its own sandbox afterward. On infrastructure failure, follow its cleanup instructions for that specific sandbox.
 
 ### Existing automated coverage
+
+For a reproducible application integration demo in a disposable Linux sandbox:
+
+```sh
+cos offload -s s-1vcpu-1gb -r devbox:1 -p npm -p python-uv \
+  -o artifacts/sandbox-checks \
+  -x '.env' -x '.env.*' -x '.dev.vars*' -x '.projects' -x '.createos.json' -x artifacts \
+  . 'npm ci --ignore-scripts --no-audit --no-fund && npm run test:sandbox'
+```
+
+This runs ten checks: the production container entry point, SPA routes, admin access and cross-origin rejection, protected sessions, live WebSockets, portal validation/rate limits, production Python/pandas provisioning, unprivileged execution with scrubbed secrets, agent repair and voting, and signed human approval. JSON results and maker/checker transcripts are returned under `artifacts/sandbox-checks/`.
+
+The agent loop uses a deterministic model fixture and the real Python runner, vote transport, and vault against local fake Stripe. Maker and checker run sequentially in this single integration sandbox. It does not establish a real model response, Stripe test-account refund, or separate-VM network isolation. `npm run test:sandbox` expects disposable Linux running as root and must not be run directly on a workstation.
+
+To test policy suites in two independent sandboxes concurrently, first check available account slots, then run:
+
+```sh
+cos fanout -j 2 -s s-1vcpu-1gb -r devbox:1 -e 127.0.0.1:9 \
+  shared 'node --test decide.test.ts' 'node --test decide.test.ts'
+```
+
+Each job runs the same policy cases in its own disposable VM with external egress closed. This proves concurrent policy-test execution, separately from the single-VM application integration demo.
 
 - Policy: matching/missing/late votes, refusal, disagreement, Stripe state, balance, human cap, daily cap, and invalid cents.
 - Intentional ownership weakness: a test documents the vulnerable v1 baseline.
