@@ -68,12 +68,12 @@ export function createosCli(args: string[], inherit = false) {
 // The CreateOS Deploy project (.createos.json, written by createos projects add/init) and its
 // test environment, created on first use.
 export function createosTarget() {
-  if (!existsSync(".createos.json")) fail("no .createos.json: run createos projects add --type upload --runtime dockerfile --port 8080 (see README)");
+  if (!existsSync(".createos.json")) fail("no .createos.json: import the GitHub repo with createos projects add --type vcs --runtime dockerfile --port 8080 (see README)");
   const project: string = JSON.parse(readFileSync(".createos.json", "utf8")).projectId;
   const list = () => JSON.parse(createosCli(["-o", "json", "environments", "list", "--project", project]) || "[]") as { id: string; uniqueName: string; extra?: { endpoint?: string } }[];
   let env = list().find((e) => e.uniqueName === "handshake-test");
   if (!env) {
-    createosCli(["environments", "create", "--project", project, "--name", "Test", "--unique-name", "handshake-test", "--auto-promote"]);
+    createosCli(["environments", "create", "--project", project, "--name", "Test", "--unique-name", "handshake-test", "--branch", "main", "--auto-promote"]);
     env = list().find((e) => e.uniqueName === "handshake-test");
   }
   if (!env) fail("could not create the CreateOS environment handshake-test");
