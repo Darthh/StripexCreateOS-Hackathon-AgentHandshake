@@ -271,6 +271,10 @@ export class Lab extends DurableObject<Env> {
     if (!vault) throw new Error("no vault box; run npm run bootstrap");
     if (!maker || !checker) {
       if (d.lab === "shadow") throw new Error("shadow lab not built; run red team with SHADOW_LAB=true");
+      // Fail fast instead of retrying forever when the plan can't hold the voter boxes.
+      const creating = this.mem.queue.filter((j) => j.type === "box" && (j.data.role === "maker" || j.data.role === "checker")).length;
+      const missing = Number(!maker) + Number(!checker) - creating;
+      if (missing > 0) await assertCapacity(this.env, missing);
       for (const role of ["maker", "checker"] as const) {
         if (!(role === "maker" ? maker : checker) && !this.mem.queue.some((j) => j.type === "box" && j.data.role === role)) await this.enqueue("box", { role });
       }
@@ -422,7 +426,12 @@ export class Lab extends DurableObject<Env> {
     const r = await portal.runCommand("tail", ["-n", `+${this.mem.portalOffset + 1}`, "/var/portal/tickets.jsonl"]);
     const lines = r.result.stdout.split("\n").filter(Boolean);
     if (!lines.length) return;
-    const exportRows = await chargesExport(this.env.READ_STRIPE_KEY);
+    // Intake must not depend on Stripe: if the lookup fails the customer is recorded as unknown
+    // and the ticket still lands (the vault checks the charge against Stripe itself later).
+    const exportRows = await chargesExport(this.env.READ_STRIPE_KEY).catch((e) => {
+      this.mem.lastError = this.scrub(`portal: customer lookup failed: ${e.message}`);
+      return [];
+    });
     for (const line of lines) {
       this.mem.portalOffset++;
       const p = safeJson(line);
