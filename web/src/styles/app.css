@@ -150,7 +150,7 @@ pre.code.out { color: var(--text-2); }
 .diff .add { color: var(--green); } .diff .del { color: var(--red); }
 
 .meter { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--border); }
-.meter > span { display: block; height: 100%; background: var(--accent); transition: width var(--ease); }
+.meter > span { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(var(--fill, 0)); transition: transform var(--ease); }
 .meter.full > span { background: var(--amber); }
 
 /* ---------- tickets board ---------- */

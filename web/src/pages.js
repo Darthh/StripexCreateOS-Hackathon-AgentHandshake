@@ -229,7 +229,7 @@ export function proof(state, ctx) {
     }</div>
     <div class="card"><div class="card-head">${icon("gauge")}Boxes vs plan</div><div class="card-body">
       <div class="row" style="justify-content:space-between;margin-bottom:8px"><span>${n} of ${state.plan_limit} sandboxes</span><span class="muted">paused boxes count</span></div>
-      <div class="meter ${n >= state.plan_limit ? "full" : ""}"><span style="width:${Math.min(100, (n / Math.max(1, state.plan_limit)) * 100)}%"></span></div>
+      <div class="meter ${n >= state.plan_limit ? "full" : ""}"><span style="--fill:${Math.min(1, n / Math.max(1, state.plan_limit))}"></span></div>
       <p class="muted" style="margin:12px 0 0">Shadow lab: ${state.lab.shadow ? "on" : "off (SHADOW_LAB=false)"} · model: <span class="mono">${state.lab.model}</span></p>
     </div></div>
   </div>
