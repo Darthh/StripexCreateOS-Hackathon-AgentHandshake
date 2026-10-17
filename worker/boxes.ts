@@ -9,8 +9,8 @@ export type Role = "portal" | "maker" | "checker" | "vault" | "attacker";
 export const DENY = ["127.0.0.1:9"];
 const GONE = ["destroyed", "destroying", "failed"];
 
-export const LAB_NET = "twokey-lab";
-export const SHADOW_NET = "twokey-shadow";
+export const LAB_NET = "handshake-lab";
+export const SHADOW_NET = "handshake-shadow";
 
 // An explicit fetch matters: with nodejs_compat the SDK otherwise detects "Node" and tries its
 // HTTP/2 connection pool (ALPN), which workerd doesn't implement, so every call fails.

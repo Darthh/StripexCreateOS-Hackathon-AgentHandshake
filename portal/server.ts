@@ -9,10 +9,10 @@ const REASONS = ["damaged", "not_delivered", "duplicate_charge", "wrong_item"];
 mkdirSync("/var/portal", { recursive: true });
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const page = (body: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Two-Key refund desk</title>
+const page = (body: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agent Handshake refund desk</title>
 <style>
-:root{--bg:#1a1a19;--surface:#1d1d1c;--border:#2c2b29;--text:#eceae5;--muted:#9a968f;--accent:#8e9af3}
-@media (prefers-color-scheme:light){:root{--bg:#fbfaf8;--surface:#fff;--border:#e9e7e2;--text:#1d1c1a;--muted:#6b6862;--accent:#4b5bd6}}
+:root{--bg:#0b0b0d;--surface:#121215;--border:#26262c;--text:#ededf0;--muted:#8c8c97;--accent:#635bff}
+@media (prefers-color-scheme:light){:root{--bg:#f7f7f9;--surface:#fff;--border:#e3e3ea;--text:#0b0b0d;--muted:#6a6a75;--accent:#635bff}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13.5px/1.5 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px}
 main{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px}
 h1{font-size:18px;margin:0 0 4px}p{color:var(--muted);margin:0 0 20px}label{display:block;margin:14px 0 6px;font-weight:500}

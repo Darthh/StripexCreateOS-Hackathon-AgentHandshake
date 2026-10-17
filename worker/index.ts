@@ -33,7 +33,7 @@ const app = new Hono<{ Bindings: Env; Variables: { admin: string } }>();
 // RPC stub, typed as the class (its methods are all async).
 const lab = (env: Env) => env.LAB.get(env.LAB.idFromName("lab")) as unknown as import("./lab.ts").Lab;
 
-app.get("/api/health", (c) => c.json({ ok: true, service: "two-key" }));
+app.get("/api/health", (c) => c.json({ ok: true, service: "agent-handshake" }));
 app.get("/api/state", async (c) => c.json(await lab(c.env).snapshot(!!(await adminIdentity(c)))));
 app.get("/api/live", (c) => lab(c.env).fetch(c.req.raw));
 app.get("/api/me", async (c) => c.json({ admin: !!(await adminIdentity(c)) }));

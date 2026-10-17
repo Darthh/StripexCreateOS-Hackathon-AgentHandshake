@@ -1,20 +1,22 @@
-/* Design tokens. Dark by default; light follows prefers-color-scheme (no theme button). */
+/* Design tokens: Agent Handshake. Black/grey with Stripe purple. Dark by default; light follows
+   prefers-color-scheme (no theme button). */
 :root {
-  --bg: #1a1a19;
-  --sidebar: #151514;
-  --surface: #1d1d1c;
-  --surface-2: #252524;
-  --border: #2c2b29;
-  --text: #eceae5;
-  --text-2: #b5b2ab;
-  --text-3: #9a968f;
-  --accent: #8e9af3;
-  --accent-ink: #12131f;
+  --bg: #0b0b0d;
+  --sidebar: #070708;
+  --surface: #121215;
+  --surface-2: #1a1a1f;
+  --border: #26262c;
+  --text: #ededf0;
+  --text-2: #b3b3bc;
+  --text-3: #8c8c97;
+  --accent: #635bff; /* Stripe blurple: fills with white ink */
+  --accent-ink: #ffffff;
+  --accent-text: #8f88ff; /* the same hue, lifted for text on black */
 
   --green: #5cba86;
   --amber: #d8a443;
   --red: #e57d70;
-  --violet: #a98deb;
+  --violet: #a39bff;
   --blue: #72a5ea;
   --gray: #8a877f;
 
@@ -38,16 +40,17 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #fbfaf8;
-    --sidebar: #f4f3f0;
+    --bg: #f7f7f9;
+    --sidebar: #efeff3;
     --surface: #ffffff;
-    --surface-2: #f6f5f2;
-    --border: #e9e7e2;
-    --text: #1d1c1a;
-    --text-2: #4a4843;
-    --text-3: #6f6c66;
-    --accent: #4b5bd6;
+    --surface-2: #f3f3f6;
+    --border: #e3e3ea;
+    --text: #0b0b0d;
+    --text-2: #3d3d45;
+    --text-3: #6a6a75;
+    --accent: #635bff;
     --accent-ink: #ffffff;
+    --accent-text: #5148e8;
 
     --green: #2f8f5b;
     --amber: #a87412;

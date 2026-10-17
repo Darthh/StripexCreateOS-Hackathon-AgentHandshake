@@ -39,7 +39,7 @@ export async function verifyAccess(env: Env, jwt: string | undefined): Promise<s
 
 export const accessJwt = (c: Context) => c.req.header("cf-access-jwt-assertion") ?? c.req.header("cookie")?.match(/CF_Authorization=([^;]+)/)?.[1];
 
-const sessionValue = (token: string) => sha256hex(`twokey-admin-session:${token}`);
+const sessionValue = (token: string) => sha256hex(`handshake-admin-session:${token}`);
 const tokenUsable = (env: Env) => !!env.ADMIN_TOKEN && env.ADMIN_TOKEN.length >= 32;
 
 export async function adminIdentity(c: Context): Promise<string | null> {
@@ -47,7 +47,7 @@ export async function adminIdentity(c: Context): Promise<string | null> {
   const viaAccess = await verifyAccess(env, accessJwt(c));
   if (viaAccess) return viaAccess;
   if (!tokenUsable(env)) return null;
-  const cookie = c.req.header("cookie")?.match(/(?:^|;\s*)twokey_admin=([a-f0-9]{64})/)?.[1];
+  const cookie = c.req.header("cookie")?.match(/(?:^|;\s*)handshake_admin=([a-f0-9]{64})/)?.[1];
   return cookie && safeEq(cookie, await sessionValue(env.ADMIN_TOKEN!)) ? "admin (token)" : null;
 }
 
@@ -73,13 +73,13 @@ export async function startSession(c: Ctx) {
   if (!tokenUsable(c.env) || typeof token !== "string" || !safeEq(await sha256hex(token), await sha256hex(c.env.ADMIN_TOKEN!))) {
     return c.json({ ok: false, reason: "wrong token" }, 403);
   }
-  c.header("set-cookie", `twokey_admin=${await sessionValue(token)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=43200`);
+  c.header("set-cookie", `handshake_admin=${await sessionValue(token)}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=43200`);
   return c.json({ ok: true });
 }
 
-export const LOGIN_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Two-Key admin sign-in</title>
-<style>:root{--bg:#1a1a19;--surface:#1d1d1c;--border:#2c2b29;--text:#eceae5;--muted:#9a968f;--accent:#8e9af3;--red:#e57d70}
-@media (prefers-color-scheme:light){:root{--bg:#fbfaf8;--surface:#fff;--border:#e9e7e2;--text:#1d1c1a;--muted:#6f6c66;--accent:#4b5bd6;--red:#c4493b}}
+export const LOGIN_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agent Handshake admin sign-in</title>
+<style>:root{--bg:#0b0b0d;--surface:#121215;--border:#26262c;--text:#ededf0;--muted:#8c8c97;--accent:#635bff;--red:#e57d70}
+@media (prefers-color-scheme:light){:root{--bg:#f7f7f9;--surface:#fff;--border:#e3e3ea;--text:#0b0b0d;--muted:#6a6a75;--accent:#635bff;--red:#c4493b}}
 body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);font:13.5px/1.5 system-ui,sans-serif}
 form{width:min(360px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px}
 h1{font-size:16px;margin:0 0 4px}p{color:var(--muted);margin:0 0 16px}label{display:block;margin-bottom:6px;font-weight:500}

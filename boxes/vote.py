@@ -4,7 +4,7 @@
 import glob, hashlib, json, os, sys, urllib.request
 vote = json.loads(sys.argv[1])
 h = hashlib.sha256()
-for f in sorted(glob.glob("/var/twokey/evidence/run_*")):
+for f in sorted(glob.glob("/var/handshake/evidence/run_*")):
     h.update(open(f, "rb").read())
 body = {
     "token": os.environ["VOTE_TOKEN"],
@@ -16,7 +16,7 @@ body = {
     "reason_code": vote.get("reason_code", ""),
     "evidence_hash": h.hexdigest(),
 }
-url_file = "/opt/twokey/vault_url"  # written by the orchestrator (forks can't be renamed)
+url_file = "/opt/handshake/vault_url"  # written by the orchestrator (forks can't be renamed)
 vault_url = open(url_file).read().strip() if os.path.exists(url_file) else "http://vault.fc.local:8080"
 req = urllib.request.Request(vault_url + "/vote",
                              data=json.dumps(body).encode(), headers={"content-type": "application/json"})

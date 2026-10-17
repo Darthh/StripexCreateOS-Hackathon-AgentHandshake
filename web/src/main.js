@@ -4,7 +4,7 @@ import "./styles/app.css";
 import {
   Activity, Banknote, Boxes, Check, Code, Crosshair, FlaskConical, Flag, FolderOpen, Gauge, GitMerge, GitPullRequest, KeyRound,
   LayoutDashboard, List, ListOrdered, Network, Package, PenTool, Pause, Play, Plus, QrCode, RefreshCw, RotateCcw, ScanSearch,
-  ScrollText, Search, Send, Shield, ShieldCheck, Siren, SquareTerminal, Swords, Terminal, Ticket, Trash2, Vault, X, FlaskRound,
+  ScrollText, Search, Send, Handshake, Shield, ShieldCheck, Siren, SquareTerminal, Swords, Terminal, Ticket, Trash2, Vault, X, FlaskRound,
   createIcons,
 } from "lucide";
 import qrcode from "qrcode-generator";
@@ -12,7 +12,7 @@ import { h, icon, raw } from "./html.js";
 import { pulse } from "./net.js";
 import * as P from "./pages.js";
 
-const ICONS = { Activity, Banknote, Boxes, Check, Code, Crosshair, FlaskConical, Flag, FolderOpen, Gauge, GitMerge, GitPullRequest, KeyRound, LayoutDashboard, List, ListOrdered, Network, Package, PenTool, Pause, Play, Plus, QrCode, RefreshCw, RotateCcw, ScanSearch, ScrollText, Search, Send, Shield, ShieldCheck, Siren, SquareTerminal, Swords, Terminal, Ticket, Trash2, Vault, X, FlaskRound };
+const ICONS = { Activity, Banknote, Boxes, Check, Code, Crosshair, FlaskConical, Flag, FolderOpen, Gauge, GitMerge, GitPullRequest, KeyRound, LayoutDashboard, List, ListOrdered, Network, Package, PenTool, Pause, Play, Plus, QrCode, RefreshCw, RotateCcw, ScanSearch, ScrollText, Search, Send, Handshake, Shield, ShieldCheck, Siren, SquareTerminal, Swords, Terminal, Ticket, Trash2, Vault, X, FlaskRound };
 
 const ROUTES = {
   "/": ["Overview", "layout-dashboard", P.overview],
@@ -237,7 +237,7 @@ function render() {
 
   app.innerHTML = String(h`<div class="shell">
     <aside class="sidebar">
-      <a class="brand" href="/" data-link><span class="brand-mark">2K</span>Two-Key</a>
+      <a class="brand" href="/" data-link><span class="brand-mark">${icon("handshake")}</span><span>Agent <b>Handshake</b></span></a>
       <nav class="nav" aria-label="Main">${MAIN_NAV.map(navLink)}
         <div class="nav-group">Labs</div>${navLink("/lab/live")}${navLink("/lab/shadow")}
       </nav>
@@ -248,7 +248,7 @@ function render() {
     </aside>
     <div class="main">
       <header class="topbar">
-        <div class="crumbs"><span>Two-Key</span><span>/</span><b>${title}</b>${ticket ? h`<span>/</span><span class="mono">${ticket.id}</span>` : ""}</div>
+        <div class="crumbs"><span>Agent Handshake</span><span>/</span><b>${title}</b>${ticket ? h`<span>/</span><span class="mono">${ticket.id}</span>` : ""}</div>
         <div class="search" data-open-palette role="button" tabindex="0" aria-label="Open command palette">${icon("search")}<span>Search or run…</span><kbd>⌘K</kbd></div>
         <span class="live ${store.live ? "on" : ""}" aria-live="polite"><span class="dot"></span><span>${store.live ? "Live" : "Reconnecting"}</span></span>
         ${P.btn(ctx, "New test ticket", "plus", "new_ticket", {}, { primary: true })}

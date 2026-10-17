@@ -1,4 +1,4 @@
-# Two-Key: dual control for AI agents that move money
+# Agent Handshake: dual control for AI agents that move money
 
 **StripexCreateOS Hackathon.** Live at <https://lunaterminal.com>. Everything runs in Stripe test mode.
 
@@ -6,7 +6,7 @@
 
 Support teams want AI agents to handle refunds, but a single prompt injection can make an agent refund the wrong order. Banks solved this long ago with **dual control**: two people must agree before money moves.
 
-Two-Key brings dual control to AI agents and enforces it with infrastructure, not prompts:
+Agent Handshake brings dual control to AI agents and enforces it with infrastructure, not prompts:
 
 - A refund executes only when **two independent AI agents** agree on exactly the same refund. Each agent runs in its own CreateOS sandbox and sees different information.
 - The only Stripe key that can move money lives in a **third sandbox running plain deterministic code**. No AI touches it.
@@ -76,7 +76,7 @@ Then `npm run secrets:sync` pushes the Worker's secrets from the Stripe Projects
 **CreateOS Sandbox** (`@nodeops-createos/sandbox`, EU control plane `https://api-eu.sb.createos.sh`) provides:
 
 - **Isolation and egress.** Every box gets a deny-by-default egress allowlist. An empty list means "open" and there is no deny token, so "none" is the single rule `127.0.0.1:9`. Each box proves at boot that HTTPS, plain HTTP and DNS to the internet fail; the result is on the Proof page.
-- **Private networking.** Voters reach the vault by name on the `twokey-lab` network. The portal is on no network at all.
+- **Private networking.** Voters reach the vault by name on the `handshake-lab` network. The portal is on no network at all.
 - **Pause and resume.** The maker and checker sleep between tickets.
 - **Fork.**
   - Evidence locker: when votes disagree, the fooled maker's workspace is frozen as a fork.

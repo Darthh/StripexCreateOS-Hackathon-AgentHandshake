@@ -21,7 +21,7 @@ export async function seed() {
   ];
   const seeded: { id: string; email: string; charges: { id: string; amount: number }[] }[] = [];
   for (const p of people) {
-    const c = await stripe.customers.create({ name: p.name, email: p.email, metadata: { twokey: "seed" } });
+    const c = await stripe.customers.create({ name: p.name, email: p.email, metadata: { handshake: "seed" } });
     const charges = [];
     for (const [i, amount] of p.orders.entries()) {
       // pm_card_bypassPending: funds are available at once, so refunds succeed immediately.
@@ -33,7 +33,7 @@ export async function seed() {
         confirm: true,
         receipt_email: p.email,
         description: `Order #${1000 + seeded.length * 10 + i}`,
-        metadata: { twokey: "seed" },
+        metadata: { handshake: "seed" },
         automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       });
       charges.push({ id: pi.latest_charge as string, amount });

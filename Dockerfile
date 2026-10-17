@@ -1,5 +1,7 @@
-# CreateOS Deploy: the Two-Key Worker running in workerd (the Cloudflare runtime) via wrangler dev.
+# CreateOS Deploy: the Agent Handshake Worker running in workerd (the Cloudflare runtime) via wrangler dev.
 FROM node:22-bookworm-slim
+# workerd verifies TLS against the OS trust store (Node ships its own, so it masks this).
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund

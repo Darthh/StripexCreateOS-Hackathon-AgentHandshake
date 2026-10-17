@@ -10,7 +10,7 @@ import { createos, createosCli, createosTarget, EU, fail, loadEnv, ok, PLAN_LIMI
 import { syncSecrets } from "./secrets-sync.ts";
 
 const PLAN = process.env.CREATEOS_PLAN ?? "free"; // free | beginner-monthly | pro-monthly
-const LAB_NET = "twokey-lab";
+const LAB_NET = "handshake-lab";
 
 // 1. Stripe Projects: every service the stack needs.
 const init = projects(["status"]);
@@ -75,13 +75,13 @@ if (!vault) {
 
 // 5. Code + secrets into the vault. The money key goes to a 0600 file, never the sandbox env.
 const hmacKey = randomBytes(32).toString("hex");
-await vault.sh("mkdir -p /opt/twokey/shared /opt/twokey/vault /var/lib/vault && chmod 700 /var/lib/vault");
-await vault.files.upload("/opt/twokey/shared/decide.ts", readFileSync("shared/decide.ts"));
-await vault.files.upload("/opt/twokey/vault/server.ts", readFileSync("vault/server.ts"));
+await vault.sh("mkdir -p /opt/handshake/shared /opt/handshake/vault /var/lib/vault && chmod 700 /var/lib/vault");
+await vault.files.upload("/opt/handshake/shared/decide.ts", readFileSync("shared/decide.ts"));
+await vault.files.upload("/opt/handshake/vault/server.ts", readFileSync("vault/server.ts"));
 await vault.files.upload("/var/lib/vault/secrets.env", `VAULT_STRIPE_KEY=${env.VAULT_STRIPE_KEY}\nAPPROVAL_HMAC_KEY=${hmacKey}\n`);
 await vault.sh("chmod 600 /var/lib/vault/secrets.env");
-await vault.sh("pkill -f /opt/twokey/vault/server.ts || true");
-await vault.processes.create({ cmd: "node", args: ["/opt/twokey/vault/server.ts"], cwd: "/opt/twokey" });
+await vault.sh("pkill -f /opt/handshake/vault/server.ts || true");
+await vault.processes.create({ cmd: "node", args: ["/opt/handshake/vault/server.ts"], cwd: "/opt/handshake" });
 let health = "";
 for (let i = 0; i < 20 && !health.includes('"ok":true'); i++) {
   await new Promise((r) => setTimeout(r, 1000));

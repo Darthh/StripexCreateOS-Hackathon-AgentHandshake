@@ -1,7 +1,7 @@
 {
-  "name": "two-key",
+  "name": "agent-handshake",
   "private": true,
-  "description": "StripexCreateOS Hackathon Two-Key: dual control for AI agents that move money",
+  "description": "StripexCreateOS Hackathon Agent Handshake: dual control for AI agents that move money",
   "type": "module",
   "engines": {
     "node": ">=22.18"

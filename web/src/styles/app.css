@@ -24,7 +24,9 @@ svg.lucide { width: 15px; height: 15px; stroke-width: 1.8; flex: none; }
   overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: 9px; padding: 6px 8px 14px; font-weight: 600; letter-spacing: -0.01em; }
-.brand-mark { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.brand-mark { width: 24px; height: 24px; border-radius: 7px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+.brand-mark svg.lucide { width: 15px; height: 15px; stroke-width: 2; }
+.brand b { color: var(--accent-text); font-weight: 600; }
 .nav-group { margin-top: 14px; padding: 0 8px 4px; color: var(--text-3); font-size: var(--fs-xs); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
 .nav a {
   display: flex; align-items: center; gap: 9px;
@@ -81,7 +83,7 @@ kbd { font-family: var(--mono); font-size: 10.5px; padding: 1px 5px; border: 1px
 }
 .btn:hover:not(:disabled) { background: var(--surface-2); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 550; }
-.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 88%, white); }
+.btn.primary:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 86%, white); }
 .btn.danger { color: var(--red); }
 .btn.sm { padding: 3px 8px; font-size: var(--fs-sm); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }

@@ -1,9 +1,9 @@
-// Regression suite runner, executed inside a sandbox with: node /var/twokey/suite/suite.ts
-// Replays every recorded case through the candidate decide() in /var/twokey/suite/decide.ts.
+// Regression suite runner, executed inside a sandbox with: node /var/handshake/suite/suite.ts
+// Replays every recorded case through the candidate decide() in /var/handshake/suite/decide.ts.
 import { readFileSync } from "node:fs";
 
-const { decide, DEFAULT_POLICY } = await import("/var/twokey/suite/decide.ts");
-const cases = JSON.parse(readFileSync("/var/twokey/suite/cases.json", "utf8"));
+const { decide, DEFAULT_POLICY } = await import("/var/handshake/suite/decide.ts");
+const cases = JSON.parse(readFileSync("/var/handshake/suite/cases.json", "utf8"));
 const results = cases.map((c: any) => {
   try {
     const d = decide(c.votes ?? [], c.charge ?? null, c.ticket ?? null, DEFAULT_POLICY, c.ctx);

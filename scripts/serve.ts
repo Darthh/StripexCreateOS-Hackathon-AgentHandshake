@@ -3,7 +3,7 @@
 // watchers: the shared host's inotify limit made `wrangler dev` crash-loop with EMFILE.
 // The Dockerfile pre-bundles the Worker to build/index.js; wrangler.jsonc stays the single source
 // for vars, compatibility settings and asset routing. Secrets go straight into memory, never a file.
-import { convertV4MiniflareOptions, Miniflare } from "miniflare";
+import { convertV4MiniflareOptions, Log, LogLevel, Miniflare } from "miniflare";
 import { unstable_readConfig } from "wrangler";
 
 const SECRETS = ["CREATEOS_SANDBOX_API_KEY", "READ_STRIPE_KEY", "MODEL_API_KEY", "DATABASE_URL", "APPROVAL_HMAC_KEY", "RESEND_API_KEY", "ADMIN_TOKEN", "ADMIN_EMAIL", "PROJECTS_STATUS"];
@@ -31,6 +31,6 @@ const options = convertV4MiniflareOptions({
     assetConfig: { not_found_handling: cfg.assets?.not_found_handling ?? "single-page-application", has_static_routing: Array.isArray(runFirst) },
   },
 });
-const mf = new Miniflare({ ...options, resourcePersistencePath: process.env.PERSIST_TO ?? "/data/miniflare" }); // Durable Object state
-console.log(`Two-Key listening on ${await mf.ready}`);
+const mf = new Miniflare({ ...options, log: new Log(LogLevel.INFO), resourcePersistencePath: process.env.PERSIST_TO ?? "/data/miniflare" }); // Durable Object state; log forwards console.* to stdout
+console.log(`Agent Handshake listening on ${await mf.ready}`);
 for (const sig of ["SIGTERM", "SIGINT"] as const) process.on(sig, () => mf.dispose().finally(() => process.exit(0)));

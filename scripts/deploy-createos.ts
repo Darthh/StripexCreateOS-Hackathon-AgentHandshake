@@ -15,7 +15,7 @@ const vars = { ...workerSecrets(), PLAN_BOX_LIMIT: process.env.PLAN_BOX_LIMIT ??
 createosCli(["env", "set", "--project", target.project, "--environment", target.environment, ...Object.entries(vars).map(([k, v]) => `${k}=${v}`)]);
 ok(`CreateOS env set: ${Object.keys(vars).join(", ")} (VAULT_STRIPE_KEY withheld)`);
 
-const dir = mkdtempSync(join(tmpdir(), "twokey-"));
+const dir = mkdtempSync(join(tmpdir(), "handshake-"));
 try {
   const stage = join(dir, "stage");
   execFileSync("git", ["archive", "--format=tar", `--prefix=stage/`, "-o", join(dir, "head.tar"), "HEAD"]);
