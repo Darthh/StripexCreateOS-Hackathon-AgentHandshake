@@ -327,6 +327,9 @@ export class Lab extends DurableObject<Env> {
     if (d.step === "wait") {
       for (const b of [maker, checker, vault]) {
         await b.refresh();
+        // A failed restore can return to paused; retry on the next alarm rather
+        // than leaving an otherwise valid ticket waiting forever.
+        if (b.status === "paused") await b.resume();
         if (b.status !== "running") return 2000;
       }
       d.step = "prepare";

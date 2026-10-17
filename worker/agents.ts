@@ -45,10 +45,13 @@ export async function agentTurn(
   // One SDK retry only: each retry is a subrequest, and the job queue backs off on 429 itself.
   const ai = new Anthropic({ apiKey: env.MODEL_API_KEY, baseURL: env.MODEL_BASE_URL, maxRetries: 1 });
   const stamp = () => new Date().toISOString();
-  job.turn++;
   const res = await ai.messages.create({ model: env.MODEL, max_tokens: 4096, system, tools: [RUN_PYTHON, ...finalTools], messages: job.messages });
+  if (!Array.isArray(res?.content)) {
+    throw Object.assign(new Error("The model provider returned an invalid message; retry the request."), { status: 502 });
+  }
+  job.turn++;
   // Free models via OpenRouter return unsigned thinking blocks; don't send them back.
-  const content = res.content.filter((b) => b.type === "text" || b.type === "tool_use");
+  const content = res.content.filter((b) => b && (b.type === "text" || b.type === "tool_use"));
   job.messages.push({ role: "assistant", content: content.length ? content : [{ type: "text", text: "(thinking)" }] });
   for (const b of content) if (b.type === "text" && b.text.trim()) job.steps.push({ at: stamp(), kind: "text", body: b.text.trim() });
 
