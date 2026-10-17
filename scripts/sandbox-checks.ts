@@ -65,6 +65,9 @@ try {
     await ready(`${origin}/api/health`, app);
     appReady = true;
     assert.deepEqual(await (await fetch(`${origin}/api/health`)).json(), { ok: true, service: "agent-handshake" });
+    const readiness = await fetch(`${origin}/api/readiness`);
+    assert.equal(readiness.status, 503);
+    assert.ok((await readiness.json() as { missing: string[] }).missing.includes("READ_STRIPE_KEY"));
     return { runtime: "scripts/serve.ts / Miniflare", port: 18081 };
   });
   if (appReady) {

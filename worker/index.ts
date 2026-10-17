@@ -34,6 +34,11 @@ const app = new Hono<{ Bindings: Env; Variables: { admin: string } }>();
 const lab = (env: Env) => env.LAB.get(env.LAB.idFromName("lab")) as unknown as import("./lab.ts").Lab;
 
 app.get("/api/health", (c) => c.json({ ok: true, service: "agent-handshake" }));
+app.get("/api/readiness", (c) => {
+  const required = ["CREATEOS_SANDBOX_API_KEY", "READ_STRIPE_KEY", "MODEL_API_KEY", "DATABASE_URL", "APPROVAL_HMAC_KEY"] as const;
+  const missing = required.filter((key) => !c.env[key]);
+  return c.json({ ok: missing.length === 0, missing }, missing.length ? 503 : 200);
+});
 app.get("/api/state", async (c) => c.json(await lab(c.env).snapshot(!!(await adminIdentity(c)))));
 app.get("/api/live", (c) => lab(c.env).fetch(c.req.raw));
 app.get("/api/me", async (c) => c.json({ admin: !!(await adminIdentity(c)) }));
