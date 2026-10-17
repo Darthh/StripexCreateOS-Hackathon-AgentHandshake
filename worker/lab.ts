@@ -157,7 +157,7 @@ export class Lab extends DurableObject<Env> {
   }
 
   // Create a box step by step: create (no wait) -> running -> setup -> lockdown -> prove.
-  async jobBox(d: { role: "maker" | "checker" | "portal" | "attacker"; step?: string; id?: string; sha?: string; net?: string }): Promise<number | undefined> {
+  async jobBox(d: { role: "maker" | "checker" | "portal" | "attacker"; step?: string; id?: string; sha?: string; net?: string; ipTries?: number }): Promise<number | undefined> {
     const env = this.env;
     const cos = client(env);
     if (!d.step) {
@@ -187,8 +187,11 @@ export class Lab extends DurableObject<Env> {
     const box = await cos.getSandbox(d.id!);
     if (d.step === "boot") {
       if (box.status !== "running") return 3000;
-      if (d.sha) await this.registerVoter("live", d.role as "maker" | "checker", d.sha, box.id, d.net!);
-      await box.sh("mkdir -p /work/evidence /work/data /opt/twokey /var/portal");
+      if (d.sha) {
+        d.ipTries = (d.ipTries ?? 0) + 1;
+        if (!(await this.registerVoter("live", d.role as "maker" | "checker", d.sha, box.id, d.net!, d.ipTries >= 10))) return 3000;
+      }
+      await box.sh("mkdir -p /work/evidence /work/data /opt/twokey /var/portal && (id agent >/dev/null 2>&1 || useradd -m -s /bin/sh agent) && chown -R agent:agent /work");
       if (d.role === "portal") {
         await box.files.upload("/opt/twokey/portal.ts", PORTAL_TS);
         await box.processes.create({ cmd: "node", args: ["/opt/twokey/portal.ts"], cwd: "/opt/twokey" });
@@ -213,13 +216,17 @@ export class Lab extends DurableObject<Env> {
     this.emit({ type: "box", role: d.role, status: "running" });
   }
 
-  async registerVoter(lab: LabName, voter: "maker" | "checker", sha: string, sandboxId: string, networkId: string) {
+  // Returns false while the voter's network IP is still unknown (caller retries).
+  async registerVoter(lab: LabName, voter: "maker" | "checker", sha: string, sandboxId: string, networkId: string, giveUpOnIp = false) {
     const vault = await this.boxFor(lab, "vault");
     if (!vault) throw new Error(`no ${lab} vault box; run npm run bootstrap`);
-    await ensureRunning(vault);
     // The vault also pins the voter's private IP when the network reports it.
     const ip = await networkIp(this.env, networkId, sandboxId).catch(() => undefined);
+    if (!ip && !giveUpOnIp) return false;
+    await ensureRunning(vault);
     await curlLocal(vault, "/admin/voters", { voters: { [voter]: { sha, ...(ip && { ip }) } } });
+    if (!ip) await audit(await this.db(), "warning", { message: `${voter} registered without IP pinning: the network never reported its IP` }, null, voter);
+    return true;
   }
 
   async jobProve(d: { id: string; role: string; tries?: number }) {
@@ -669,7 +676,7 @@ export class Lab extends DurableObject<Env> {
     return this.unauthorizedCache.value;
   }
 
-  async snapshot() {
+  async snapshot(admin = false) {
     const sql = await this.db();
     const roleOf = (b: Sandbox) => {
       const sh = Object.entries(this.mem.shadow).find(([, id]) => id === b.id)?.[0];
@@ -693,7 +700,7 @@ export class Lab extends DurableObject<Env> {
         const net = role === "portal" ? "none" : role.startsWith("shadow") || (role === "attacker" && this.env.SHADOW_LAB === "true") ? SHADOW_NET : LAB_NET;
         return { ...view(b, role), proof: this.mem.proofs[b.name ?? b.id] ?? null, network: net };
       }),
-      tickets,
+      tickets: admin ? tickets : tickets.map((t) => ({ ...t, customer_email: mask(t.customer_email) })),
       audit: auditRows,
       attacks,
       patches,
@@ -792,6 +799,9 @@ export class Lab extends DurableObject<Env> {
     throw new Error(`unknown action ${name}`);
   }
 }
+
+// Public visitors see "a***@example.com"; admins see the full address.
+const mask = (email: string | null) => (email ? email.replace(/^(.).*(@.*)$/, "$1***$2") : email);
 
 function safeJson(s: string) {
   try {

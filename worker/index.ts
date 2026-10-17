@@ -32,7 +32,7 @@ const app = new Hono<{ Bindings: Env; Variables: { admin: string } }>();
 const lab = (env: Env) => env.LAB.get(env.LAB.idFromName("lab")) as unknown as import("./lab.ts").Lab;
 
 app.get("/api/health", (c) => c.json({ ok: true, service: "two-key" }));
-app.get("/api/state", async (c) => c.json(await lab(c.env).snapshot()));
+app.get("/api/state", async (c) => c.json(await lab(c.env).snapshot(!!(await verifyAccess(c.env, accessJwt(c))))));
 app.get("/api/live", (c) => lab(c.env).fetch(c.req.raw));
 app.get("/api/me", async (c) => c.json({ admin: !!(await verifyAccess(c.env, accessJwt(c))) }));
 

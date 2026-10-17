@@ -19,7 +19,7 @@ input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--border)
 textarea{min-height:96px;resize:vertical}button{margin-top:20px;width:100%;padding:10px;border:0;border-radius:6px;background:var(--accent);color:#fff;font:inherit;font-weight:600;cursor:pointer}
 code{font-family:ui-monospace,monospace}</style></head><body><main>${body}</main></body></html>`;
 
-const FORM = page(`<h1>Request a refund</h1><p>Two AI agents check every request independently. Stripe test mode: no real money moves.</p>
+const FORM = page(`<h1>Request a refund</h1><p>Two AI agents check every request independently. Stripe test mode: no real money moves. Requests are shown on the public demo dashboard, so use test data only.</p>
 <form method="post" action="/ticket">
 <label for="email">Your email</label><input id="email" name="email" type="email" required maxlength="200" autocomplete="email">
 <label for="charge_id">Order (charge id)</label><input id="charge_id" name="charge_id" required pattern="ch_[A-Za-z0-9]{6,40}" placeholder="ch_..." autocomplete="off">

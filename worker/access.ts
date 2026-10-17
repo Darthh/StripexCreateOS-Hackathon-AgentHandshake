@@ -31,6 +31,14 @@ export async function verifyAccess(env: Env, jwt: string | undefined): Promise<s
 export const accessJwt = (c: Context) => c.req.header("cf-access-jwt-assertion") ?? c.req.header("cookie")?.match(/CF_Authorization=([^;]+)/)?.[1];
 
 export async function requireAdmin(c: Context<{ Bindings: Env; Variables: { admin: string } }>, next: Next) {
+  // CSRF: the Access cookie rides along on cross-site requests, so writes must be
+  // same-origin JSON (a cross-site form or no-cors fetch can't send that).
+  if (c.req.method !== "GET") {
+    const origin = c.req.header("origin");
+    if (!origin || new URL(origin).host !== new URL(c.req.url).host || !c.req.header("content-type")?.startsWith("application/json")) {
+      return c.json({ ok: false, reason: "cross-site request refused" }, 403);
+    }
+  }
   const who = await verifyAccess(c.env, accessJwt(c));
   if (!who) return c.json({ ok: false, reason: "admin only (Cloudflare Access)" }, 403);
   c.set("admin", who);
